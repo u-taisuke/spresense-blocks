@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "category",
+    "name": "制御",
+    "colour": "#FFAB19",
+    "contents": [
+      { "kind": "block", "type": "spresense_forever" },
+      { "kind": "block", "type": "spresense_wait_ms" },
+      { "kind": "block", "type": "spresense_repeat_times" },
+      { "kind": "block", "type": "spresense_if" }
+    ]
+  },
+  {
+    "kind": "category",
+    "name": "動作",
+    "colour": "#4C97FF",
+    "contents": [
+      { "kind": "block", "type": "spresense_onboard_led_set" },
+      { "kind": "block", "type": "spresense_digital_write" },
+      { "kind": "block", "type": "spresense_pwm_write" }
+    ]
+  },
+  {
+    "kind": "category",
+    "name": "センシング",
+    "colour": "#5CB1D6",
+    "contents": [
+      { "kind": "block", "type": "spresense_digital_read" },
+      { "kind": "block", "type": "spresense_analog_read" }
+    ]
+  },
+  {
+    "kind": "category",
+    "name": "演算",
+    "colour": "#59C059",
+    "contents": [
+      { "kind": "block", "type": "spresense_compare" },
+      { "kind": "block", "type": "spresense_number" }
+    ]
+  },
+  {
+    "kind": "category",
+    "name": "変数",
+    "colour": "#9966FF",
+    "contents": [
+      { "kind": "block", "type": "spresense_variable_set" },
+      { "kind": "block", "type": "spresense_variable_get" }
+    ]
+  }
+]

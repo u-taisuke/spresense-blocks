@@ -1,0 +1,41 @@
+{
+  "SPRESENSE_COREIO_FOREVER": "ずっと %1",
+  "SPRESENSE_COREIO_FOREVER_TOOLTIP": "中に入れたブロックを、プログラムが終わるまで繰り返し実行します。",
+  "SPRESENSE_COREIO_LED_SET": "オンボードLED %1 を %2 にする",
+  "SPRESENSE_COREIO_LED_SET_TOOLTIP": "基板についているLEDのオン・オフを切りかえます。",
+  "SPRESENSE_COREIO_ON": "点ける",
+  "SPRESENSE_COREIO_OFF": "消す",
+  "SPRESENSE_COREIO_WAIT_MS": "%1 ミリ秒待つ",
+  "SPRESENSE_COREIO_WAIT_MS_TOOLTIP": "指定した時間(ミリ秒)だけ次のブロックに進むのを待ちます。1000ミリ秒 = 1秒です。",
+
+  "SPRESENSE_COREIO_DIGITAL_WRITE": "デジタルピン %1 を %2 にする",
+  "SPRESENSE_COREIO_DIGITAL_WRITE_TOOLTIP": "指定したピンの電圧を高い(ON)か低い(OFF)かに切りかえます。",
+  "SPRESENSE_COREIO_DIGITAL_HIGH": "ON",
+  "SPRESENSE_COREIO_DIGITAL_LOW": "OFF",
+
+  "SPRESENSE_COREIO_DIGITAL_READ": "デジタルピン %1 がONになっている",
+  "SPRESENSE_COREIO_DIGITAL_READ_TOOLTIP": "指定したピンがON(高い電圧)になっているかどうかを調べます。スイッチなどをつないだときに使います。",
+
+  "SPRESENSE_COREIO_ANALOG_READ": "アナログピン %1 の値",
+  "SPRESENSE_COREIO_ANALOG_READ_TOOLTIP": "指定したアナログピンの値を 0〜1023 の数字で読み取ります。明るさセンサーなどをつないだときに使います。",
+
+  "SPRESENSE_COREIO_PWM_WRITE": "ピン %1 のPWM出力を %2 にする(0〜255)",
+  "SPRESENSE_COREIO_PWM_WRITE_TOOLTIP": "LEDの明るさやモーターの速さなどを、0(弱い)〜255(強い)の間で調整します。",
+
+  "SPRESENSE_COREIO_REPEAT_TIMES": "%1 回くり返す %2",
+  "SPRESENSE_COREIO_REPEAT_TIMES_TOOLTIP": "中に入れたブロックを、指定した回数だけくり返します。",
+
+  "SPRESENSE_COREIO_IF": "もし %1 なら %2",
+  "SPRESENSE_COREIO_IF_TOOLTIP": "条件が正しい(true)ときだけ、中のブロックを実行します。",
+
+  "SPRESENSE_COREIO_COMPARE": "%1 %2 %3",
+  "SPRESENSE_COREIO_COMPARE_TOOLTIP": "2つの数字を比べて、正しいか正しくないかを答えます。",
+
+  "SPRESENSE_COREIO_NUMBER_TOOLTIP": "数字を入力します。",
+
+  "SPRESENSE_COREIO_VARIABLE_SET": "変数 %1 を %2 にする",
+  "SPRESENSE_COREIO_VARIABLE_SET_TOOLTIP": "変数に数字を記録します。同じ名前の変数は、プログラムのどこからでも使えます。",
+
+  "SPRESENSE_COREIO_VARIABLE_GET": "変数 %1",
+  "SPRESENSE_COREIO_VARIABLE_GET_TOOLTIP": "変数に記録されている数字を取り出します。"
+}

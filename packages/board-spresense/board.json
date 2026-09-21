@@ -1,0 +1,18 @@
+{
+  "id": "spresense-main",
+  "displayName": "SPRESENSE メインボード",
+  "package": "SPRESENSE",
+  "architecture": "spresense",
+  "boardKey": "spresense",
+  "fqbn": "SPRESENSE:spresense:spresense",
+  "boardManagerUrl": "https://github.com/sonydevworld/spresense-arduino-compatible/releases/download/generic/package_spresense_index.json",
+  "coreId": "SPRESENSE:spresense",
+  "_notes": [
+    "SPRESENSE:spresense@3.4.7 で実機確認済み(2026-09-19)。`arduino-cli board details` によると",
+    "Core(MainCore/Sub1-5)・Memory・UploadSpeed・Debug のメニューオプションがあるが、",
+    "いずれもデフォルト値(Core=Main, Memory=768, UploadSpeed=115200, Debug=Disabled)があるため、",
+    "メインコア用途ではこの fqbn をそのまま使えばよい(オプション指定不要)。",
+    "マルチコア機能(SubCore)を使うブロックパックを追加するときは、FQBNに `:Core=Sub1` 等を",
+    "付与する必要がある点に注意。"
+  ]
+}

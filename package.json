@@ -1,0 +1,21 @@
+{
+  "name": "spresense-blocks",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SPRESENSE 向けのブロックプログラミング開発環境（Scratch/MakeCode 風）",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/block-packs/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/editor",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

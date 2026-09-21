@@ -1,0 +1,17 @@
+appId: jp.ac.shohoku.spresense-blocks
+productName: Spresense Blocks
+directories:
+  buildResources: build
+  output: release
+files:
+  - out/**/*
+# arduino-cli 等の実行バイナリを Phase 2 で resources に同梱する際は、
+# asar の外に展開されるよう asarUnpack の設定をここに追加すること。
+asarUnpack:
+  - resources/**
+win:
+  target: nsis
+mac:
+  target: dmg
+linux:
+  target: AppImage

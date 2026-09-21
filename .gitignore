@@ -1,0 +1,14 @@
+node_modules/
+dist/
+out/
+release/
+*.log
+.DS_Store
+Thumbs.db
+.claude/
+.vscode/
+*.tsbuildinfo
+.vite/
+
+# 開発機ごとにダウンロードする arduino-cli 本体(大きいバイナリなのでコミットしない)
+tools/arduino-cli/
