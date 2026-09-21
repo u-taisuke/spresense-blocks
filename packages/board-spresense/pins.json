@@ -1,0 +1,58 @@
+{
+  "_notes": [
+    "実際にインストールした SPRESENSE:spresense@3.4.7 コアの",
+    "variants/spresense/pins_arduino.h と cores/spresense/wiring_analog.c を確認して作成(2026-09-19)。",
+    "・デジタルピンは D00〜D28 がメインボードの2列ピンヘッダに物理的に出ている(D29以降はヘッダ未使用)。",
+    "・digitalWrite/digitalRead/pinMode では 'PIN_D00' のようなマクロ名を使う必要がある(素の 'D00' という定数は無い)。",
+    "・analogWrite(PWM)は D00〜D28 のほぼ全ピンで使える(ソフトウェアタイマーによる疑似PWM)。",
+    "  ただし D03/D05/D06/D09 の4本だけは専用ハードウェアPWM(pwmCapablePins)で、より安定した出力になる。",
+    "  ブロックのUIでは区別せず同じ『PWM出力』ブロックから全デジタルピンを選べるようにしている。",
+    "・アナログ入力は A0〜A5 の6本、analogRead()で0〜1023の値が返る。"
+  ],
+  "onboardLeds": [
+    { "id": "LED0", "label": "LED0" },
+    { "id": "LED1", "label": "LED1" },
+    { "id": "LED2", "label": "LED2" },
+    { "id": "LED3", "label": "LED3" }
+  ],
+  "digitalPins": [
+    { "id": "PIN_D00", "label": "D00" },
+    { "id": "PIN_D01", "label": "D01" },
+    { "id": "PIN_D02", "label": "D02" },
+    { "id": "PIN_D03", "label": "D03" },
+    { "id": "PIN_D04", "label": "D04" },
+    { "id": "PIN_D05", "label": "D05" },
+    { "id": "PIN_D06", "label": "D06" },
+    { "id": "PIN_D07", "label": "D07" },
+    { "id": "PIN_D08", "label": "D08" },
+    { "id": "PIN_D09", "label": "D09" },
+    { "id": "PIN_D10", "label": "D10" },
+    { "id": "PIN_D11", "label": "D11" },
+    { "id": "PIN_D12", "label": "D12" },
+    { "id": "PIN_D13", "label": "D13" },
+    { "id": "PIN_D14", "label": "D14" },
+    { "id": "PIN_D15", "label": "D15" },
+    { "id": "PIN_D16", "label": "D16" },
+    { "id": "PIN_D17", "label": "D17" },
+    { "id": "PIN_D18", "label": "D18" },
+    { "id": "PIN_D19", "label": "D19" },
+    { "id": "PIN_D20", "label": "D20" },
+    { "id": "PIN_D21", "label": "D21" },
+    { "id": "PIN_D22", "label": "D22" },
+    { "id": "PIN_D23", "label": "D23" },
+    { "id": "PIN_D24", "label": "D24" },
+    { "id": "PIN_D25", "label": "D25" },
+    { "id": "PIN_D26", "label": "D26" },
+    { "id": "PIN_D27", "label": "D27" },
+    { "id": "PIN_D28", "label": "D28" }
+  ],
+  "analogPins": [
+    { "id": "A0", "label": "A0" },
+    { "id": "A1", "label": "A1" },
+    { "id": "A2", "label": "A2" },
+    { "id": "A3", "label": "A3" },
+    { "id": "A4", "label": "A4" },
+    { "id": "A5", "label": "A5" }
+  ],
+  "pwmCapablePins": ["PIN_D03", "PIN_D05", "PIN_D06", "PIN_D09"]
+}
