@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ArduinoCliBusyError, ArduinoCliClient, parseBoardList } from "../src/ArduinoCliClient.js";
+import {
+  ArduinoCliBusyError,
+  ArduinoCliClient,
+  parseBoardList,
+  parseInstalledCoreVersion,
+} from "../src/ArduinoCliClient.js";
 
 describe("parseBoardList", () => {
   it("parses the newer `{ detected_ports: [...] }` shape", () => {
@@ -31,6 +36,32 @@ describe("parseBoardList", () => {
 
   it("returns an empty list for blank output", () => {
     expect(parseBoardList("")).toEqual([]);
+  });
+});
+
+describe("parseInstalledCoreVersion", () => {
+  it("returns the installed_version for a matching platform id", () => {
+    const json = JSON.stringify({
+      platforms: [
+        { id: "arduino:avr", installed_version: "1.8.8" },
+        { id: "SPRESENSE:spresense", installed_version: "3.4.7" },
+      ],
+    });
+    expect(parseInstalledCoreVersion(json, "SPRESENSE:spresense")).toBe("3.4.7");
+  });
+
+  it("returns null when the platform has no installed_version (not installed)", () => {
+    const json = JSON.stringify({ platforms: [{ id: "SPRESENSE:spresense" }] });
+    expect(parseInstalledCoreVersion(json, "SPRESENSE:spresense")).toBeNull();
+  });
+
+  it("returns null when the platform id is not found at all", () => {
+    const json = JSON.stringify({ platforms: [{ id: "arduino:avr", installed_version: "1.8.8" }] });
+    expect(parseInstalledCoreVersion(json, "SPRESENSE:spresense")).toBeNull();
+  });
+
+  it("returns null for blank output", () => {
+    expect(parseInstalledCoreVersion("", "SPRESENSE:spresense")).toBeNull();
   });
 });
 

@@ -7,6 +7,8 @@
   "fqbn": "SPRESENSE:spresense:spresense",
   "boardManagerUrl": "https://github.com/sonydevworld/spresense-arduino-compatible/releases/download/generic/package_spresense_index.json",
   "coreId": "SPRESENSE:spresense",
+  "coreVersion": "3.4.7",
+  "arduinoCliVersion": "1.5.1",
   "_notes": [
     "SPRESENSE:spresense@3.4.7 で実機確認済み(2026-09-19)。`arduino-cli board details` によると",
     "Core(MainCore/Sub1-5)・Memory・UploadSpeed・Debug のメニューオプションがあるが、",
