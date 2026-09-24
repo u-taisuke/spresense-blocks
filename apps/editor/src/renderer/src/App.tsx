@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from "./BlocklyWorkspace";
 import { PortSelect } from "./PortSelect";
+import { SetupScreen } from "./SetupScreen";
 import type { DetectedBoard } from "@spresense-blocks/arduino-cli-bridge";
 import { board, isSpresenseDetectedBoard } from "@spresense-blocks/board-spresense";
 import { PROJECT_SCHEMA_VERSION, type ProjectFile } from "./project";
@@ -11,7 +12,45 @@ import { PROJECT_SCHEMA_VERSION, type ProjectFile } from "./project";
 // ArduinoCliBusyError の連発を避ける。
 const PORT_WATCH_INTERVAL_MS = 2000;
 
+const USB_DRIVER_HELP_URL = "https://developer.sony.com/develop/spresense/";
+
+/**
+ * arduino-cli / SPRESENSEコアのセットアップが終わるまでは SetupScreen を表示し、
+ * 終わってから初めて実際のブロックエディタ(Editor)をマウントする。
+ * こうしないと、まだ arduino-cli 本体が存在しない状態でポート検索等のIPCが先に走ってしまう。
+ */
 export function App(): React.JSX.Element {
+  const [setupReady, setSetupReady] = useState(false);
+  const [setupMessage, setSetupMessage] = useState("準備しています...");
+  const [setupError, setSetupError] = useState<string | null>(null);
+
+  const runSetup = useCallback(() => {
+    setSetupError(null);
+    window.spresense.runSetup().then((result) => {
+      if (result.ok) {
+        setSetupReady(true);
+      } else {
+        setSetupError(result.error);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = window.spresense.onSetupProgress((event) => {
+      setSetupMessage(event.message);
+    });
+    runSetup();
+    return unsubscribe;
+  }, [runSetup]);
+
+  if (!setupReady) {
+    return <SetupScreen message={setupMessage} error={setupError} onRetry={runSetup} />;
+  }
+
+  return <Editor />;
+}
+
+function Editor(): React.JSX.Element {
   const [code, setCode] = useState("");
   const [ports, setPorts] = useState<DetectedBoard[]>([]);
   const [selectedPort, setSelectedPort] = useState("");
@@ -190,6 +229,13 @@ export function App(): React.JSX.Element {
         />
         <button type="button" className="primary" onClick={handleBuild} disabled={busy}>
           {busy ? "書き込み中..." : "コンパイル & 書き込み"}
+        </button>
+        <button
+          type="button"
+          className="help-link"
+          onClick={() => window.spresense.openExternal(USB_DRIVER_HELP_URL)}
+        >
+          USBが認識されないときは
         </button>
       </header>
       <main className="main">

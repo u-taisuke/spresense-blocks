@@ -30,6 +30,26 @@ export class ArduinoCliExitError extends Error {
   }
 }
 
+export class ArduinoCliTimeoutError extends Error {
+  constructor(public readonly command: string[]) {
+    super(
+      `arduino-cli ${command.join(" ")} が一定時間たっても終わりませんでした。` +
+        "ネットワークが不安定か、ファイアウォール/ウイルス対策ソフトが通信をブロックしている可能性があります。"
+    );
+    this.name = "ArduinoCliTimeoutError";
+  }
+}
+
+/**
+ * 1コマンドに許す最大実行時間。
+ *
+ * ネットワークが完全に無応答の場合、arduino-cli 自身がハングして戻ってこないことがある
+ * (ファイアウォール/ウイルス対策ソフトが未署名の通信を検査中に無応答のまま止めてしまう等)。
+ * それでもUIが「ずっと処理中」のまま固まってしまわないよう、必ずここで強制終了する。
+ * コンパイルやコアインストールは数十秒〜数分かかることがあるため、十分長めに取ってある。
+ */
+const COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
+
 /**
  * arduino-cli サブプロセスの唯一の窓口。
  *
@@ -41,7 +61,13 @@ export class ArduinoCliExitError extends Error {
 export class ArduinoCliClient {
   private busy = false;
 
-  constructor(private readonly binaryPath: string = resolveArduinoCliPath()) {}
+  constructor(
+    private readonly binaryPath: string = resolveArduinoCliPath(),
+    /** 指定すると、すべてのコマンドに `--config-file <path>` を付与する(ユーザーの既存Arduino環境を触らないため)。 */
+    private readonly configFilePath?: string,
+    /** テスト用。既定値は COMMAND_TIMEOUT_MS(5分)。 */
+    private readonly commandTimeoutMs: number = COMMAND_TIMEOUT_MS
+  ) {}
 
   async compile(sketchDir: string, fqbn: string, events: ArduinoCliEvents = {}): Promise<void> {
     await this.run(["compile", "--fqbn", fqbn, sketchDir], events);
@@ -51,8 +77,27 @@ export class ArduinoCliClient {
     await this.run(["upload", "--fqbn", fqbn, "--port", port, sketchDir], events);
   }
 
+  async updateIndex(events: ArduinoCliEvents = {}): Promise<void> {
+    await this.run(["core", "update-index"], events);
+  }
+
   async ensureCoreInstalled(coreId: string, events: ArduinoCliEvents = {}): Promise<void> {
     await this.run(["core", "install", coreId], events);
+  }
+
+  /** インストール済みのコアのバージョンを返す(未インストールなら null)。 */
+  async getInstalledCoreVersion(coreId: string): Promise<string | null> {
+    let stdout = "";
+    try {
+      await this.run(["core", "list", "--format", "json"], {
+        onStdout: (chunk) => {
+          stdout += chunk;
+        },
+      });
+    } catch {
+      return null;
+    }
+    return parseInstalledCoreVersion(stdout, coreId);
   }
 
   async listBoards(): Promise<DetectedBoard[]> {
@@ -71,9 +116,22 @@ export class ArduinoCliClient {
     }
     this.busy = true;
 
+    const fullArgs = this.configFilePath ? ["--config-file", this.configFilePath, ...args] : args;
+
     return new Promise((resolve, reject) => {
-      const child = spawn(this.binaryPath, args, { windowsHide: true });
+      const child = spawn(this.binaryPath, fullArgs, { windowsHide: true });
       let stderr = "";
+      let settled = false;
+
+      const timeoutId = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        this.busy = false;
+        child.kill();
+        reject(new ArduinoCliTimeoutError(args));
+      }, this.commandTimeoutMs);
 
       child.stdout.on("data", (data: Buffer) => events.onStdout?.(data.toString("utf8")));
       child.stderr.on("data", (data: Buffer) => {
@@ -83,11 +141,21 @@ export class ArduinoCliClient {
       });
 
       child.on("error", (error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutId);
         this.busy = false;
         reject(error);
       });
 
       child.on("close", (exitCode) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutId);
         this.busy = false;
         if (exitCode === 0) {
           resolve();
@@ -128,4 +196,20 @@ export function parseBoardList(rawJson: string): DetectedBoard[] {
       fqbn: first?.fqbn,
     };
   });
+}
+
+/**
+ * `arduino-cli core list --format json` の出力から、指定したコアのインストール済みバージョンを取り出す。
+ * (このコマンドはインストール済みかどうかに関わらずインデックス上の全プラットフォームを返すため、
+ * 対象の `installed_version` フィールドの有無で判定する)
+ */
+export function parseInstalledCoreVersion(rawJson: string, coreId: string): string | null {
+  if (!rawJson.trim()) {
+    return null;
+  }
+  const parsed = JSON.parse(rawJson) as {
+    platforms?: Array<{ id?: string; installed_version?: string }>;
+  };
+  const platform = parsed.platforms?.find((p) => p.id === coreId);
+  return platform?.installed_version ?? null;
 }

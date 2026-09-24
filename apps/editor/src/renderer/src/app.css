@@ -150,3 +150,86 @@ body,
   font-family: "Consolas", monospace;
   font-size: 0.85rem;
 }
+
+.setup-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #2d3f6c;
+}
+
+.setup-card {
+  width: 480px;
+  max-width: 90vw;
+  padding: 32px;
+  border-radius: 12px;
+  background: white;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.setup-card h1 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+.setup-note {
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.setup-message {
+  font-weight: bold;
+  margin: 16px 0 4px;
+}
+
+.setup-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 16px auto 0;
+  border: 4px solid #dde3f5;
+  border-top-color: #4a6cd4;
+  border-radius: 50%;
+  animation: setup-spin 0.8s linear infinite;
+}
+
+@keyframes setup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.setup-error-detail {
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.setup-error button {
+  margin-top: 12px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #e07a2c;
+  color: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.help-link {
+  background: none;
+  border: none;
+  color: #cfd8ee;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}

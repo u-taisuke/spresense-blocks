@@ -10,6 +10,10 @@ export interface BoardDefinition {
   fqbn: string;
   boardManagerUrl: string;
   coreId: string;
+  /** アプリが自動インストールする SPRESENSE コアのバージョン(固定)。 */
+  coreVersion: string;
+  /** アプリが自動ダウンロードする arduino-cli 本体のバージョン(固定)。 */
+  arduinoCliVersion: string;
 }
 
 export interface OnboardLed {
@@ -31,6 +35,9 @@ export interface PinMap {
 
 export const board: BoardDefinition = boardJson;
 export const pins: PinMap = pinsJson as PinMap;
+
+/** `arduino-cli core install` に渡す、バージョン固定済みのターゲット文字列。 */
+export const boardCoreInstallTarget = `${board.coreId}@${board.coreVersion}`;
 
 /**
  * `arduino-cli board list` が返す検出結果が、この SPRESENSE ボード定義と一致するかを判定する。

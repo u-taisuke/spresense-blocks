@@ -7,8 +7,6 @@ import { board } from "@spresense-blocks/board-spresense";
 
 const SKETCH_NAME = "spresense_blocks_sketch";
 
-const client = new ArduinoCliClient();
-
 /** Arduino のビルドシステムは「スケッチフォルダ名 == .inoファイル名」を要求するため、専用の一時ディレクトリに書き出す。 */
 function writeSketch(code: string): string {
   const parentDir = mkdtempSync(join(tmpdir(), "spresense-blocks-"));
@@ -18,7 +16,11 @@ function writeSketch(code: string): string {
   return sketchDir;
 }
 
-export function registerArduinoIpc(getWindow: () => BrowserWindow | null): void {
+/**
+ * @param client セットアップ処理(SetupManager)が用意した、専用データディレクトリを指す
+ *   ArduinoCliClient を渡すこと。ユーザーの既存Arduino環境と衝突させないため。
+ */
+export function registerArduinoIpc(getWindow: () => BrowserWindow | null, client: ArduinoCliClient): void {
   const sendLog = (channel: "stdout" | "stderr", chunk: string): void => {
     getWindow()?.webContents.send("arduino:log", { channel, chunk });
   };
