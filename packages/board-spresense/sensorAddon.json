@@ -1,0 +1,21 @@
+{
+  "_notes": [
+    "SPRESENSE用センサーボード(BMP280/BMI160搭載, 型番SSCI-052580, Switch Science製)を対象にしている。",
+    "2026年時点で販売終了しているが、既に入手済みのユーザー向けに対応を残す。",
+    "BMP280(気圧・温度)は Adafruit の正式ライブラリ(Library Manager登録済み)。",
+    "BMI160(加速度・ジャイロ)は Library Manager に登録が無いため、GitHub(hanyazou/BMI160-Arduino)から",
+    "直接取得する。上流の予期しない変更に左右されないよう、コミットハッシュを固定している。",
+    "どちらも SPRESENSE:spresense:spresense での実コンパイル成功を確認済み(2026-09-29)。",
+    "実機(加速度・気圧の実際の値)での動作確認はまだ行っていない。"
+  ],
+  "libraries": [
+    {
+      "name": "Adafruit BMP280 Library",
+      "libraryManagerName": "Adafruit BMP280 Library"
+    },
+    {
+      "name": "BMI160-Arduino",
+      "gitUrl": "https://github.com/hanyazou/BMI160-Arduino.git#057f36e002bee0473a54fcedf41b93acad059568"
+    }
+  ]
+}

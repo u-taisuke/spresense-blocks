@@ -14,34 +14,24 @@ const COMPARE_OPERATORS: Record<string, string> = {
 };
 
 /**
- * core-io パックのブロック用コード生成関数を、渡された SketchBuilder に
- * 副作用として書き込む Blockly.Generator を組み立てる。
+ * core-io パックのブロック用コード生成関数を、渡された Blockly.Generator に登録する。
  *
  * 生成関数自体は「このブロックの1行(または空文字)」を返すだけの薄いものにし、
  * include/setup 行の登録のような「重複してはいけない」情報だけを
  * builder.addInclude / builder.addSetup に直接書き込む。
  * これにより、最終的なファイル構成(#include の並び順、setup/loopの組み立て)は
  * 常に SketchBuilder 側だけが決める、という責務分担を保つ。
+ *
+ * `generator` はアプリ全体で1つだけ作られる共有インスタンスを想定している
+ * (複数のブロックパックのブロックが同じワークスペースに混在するため)。
+ * このパックはここで自分の `forBlock` を登録するだけで、
+ * `Blockly.Generator` 自体の生成や `scrub_` の設定(次ブロックへの連結)は
+ * 呼び出し側(アプリ)の責任にする。
  */
-export function createArduinoGenerator(builder: SketchBuilder): Blockly.Generator {
-  const generator = new Blockly.Generator("Arduino");
-  generator.INDENT = "  ";
-  // Blockly.Generator の既定の scrub_ は素通し(コードをそのまま返すだけ)で、
-  // 「次に接続されたブロックのコードをつなげる」処理は行わない
-  // (JavaScript/Python等の言語別ジェネレータが各自 scrub_ で実装している処理)。
-  // そのため、この Arduino 用ジェネレータでも自前で次ブロックへ連結する。
-  generator.scrub_ = (block: Blockly.Block, code: string) => {
-    const nextBlock = block.nextConnection?.targetBlock() ?? null;
-    if (!nextBlock) {
-      return code;
-    }
-    const nextCode = generator.blockToCode(nextBlock);
-    return code + (typeof nextCode === "string" ? nextCode : nextCode[0]);
-  };
-
+export function registerGenerators(generator: Blockly.Generator, builder: SketchBuilder): void {
   // 変数ブロックの「表示名(自由入力・日本語も可)」→「安全なC++識別子」の対応表。
   // C++の識別子として不正な文字(日本語・空白等)をそのまま出力しないための変換で、
-  // 1回の generateSketch() 呼び出し内(=このジェネレータのインスタンス)でだけ一貫していればよい。
+  // 1回のコード生成呼び出し内(=この registerGenerators 呼び出し)でだけ一貫していればよい。
   const variableNames = new Map<string, string>();
   function safeVariableName(displayName: string): string {
     const existing = variableNames.get(displayName);
@@ -140,19 +130,40 @@ export function createArduinoGenerator(builder: SketchBuilder): Blockly.Generato
     builder.addGlobal(`var:${safeName}`, `float ${safeName} = 0;`);
     return [safeName, ORDER_ATOMIC];
   };
+}
 
-  return generator;
+/** 新しく作った Blockly.Generator に、次ブロックへの連結を行う scrub_ を設定する。 */
+function setupChaining(generator: Blockly.Generator): void {
+  // Blockly.Generator の既定の scrub_ は素通し(コードをそのまま返すだけ)で、
+  // 「次に接続されたブロックのコードをつなげる」処理は行わない
+  // (JavaScript/Python等の言語別ジェネレータが各自 scrub_ で実装している処理)。
+  generator.scrub_ = (block: Blockly.Block, code: string) => {
+    const nextBlock = block.nextConnection?.targetBlock() ?? null;
+    if (!nextBlock) {
+      return code;
+    }
+    const nextCode = generator.blockToCode(nextBlock);
+    return code + (typeof nextCode === "string" ? nextCode : nextCode[0]);
+  };
 }
 
 /**
  * ワークスペース全体から最終的な .ino ソースを1つ組み立てる。
  * builder は毎回 reset() されるので、呼び出し側で使い回してよい。
+ *
+ * このパック単体でのテスト・動作確認用。実アプリでは複数パックを1つの
+ * Blockly.Generator にまとめる必要があるため、`apps/editor` 側で
+ * `registerGenerators` を直接使って合成している(BlocklyWorkspace.tsx を参照)。
  */
 export function generateSketch(workspace: Blockly.Workspace, builder: SketchBuilder): string {
   builder.reset();
   builder.addInclude("<Arduino.h>");
 
-  const generator = createArduinoGenerator(builder);
+  const generator = new Blockly.Generator("Arduino");
+  generator.INDENT = "  ";
+  setupChaining(generator);
+  registerGenerators(generator, builder);
+
   generator.init(workspace);
   for (const block of workspace.getTopBlocks(true)) {
     generator.blockToCode(block);

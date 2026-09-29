@@ -11,6 +11,8 @@ const workspacePackages = [
   "@spresense-blocks/board-spresense",
   "@spresense-blocks/codegen-core",
   "@spresense-blocks/block-pack-core-io",
+  "@spresense-blocks/block-pack-sensor-addon",
+  "@spresense-blocks/block-shared",
 ];
 
 export default defineConfig({

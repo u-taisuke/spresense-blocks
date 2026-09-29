@@ -4,6 +4,7 @@ import {
   ArduinoCliClient,
   parseBoardList,
   parseInstalledCoreVersion,
+  parseInstalledLibraryNames,
 } from "../src/ArduinoCliClient.js";
 
 describe("parseBoardList", () => {
@@ -62,6 +63,27 @@ describe("parseInstalledCoreVersion", () => {
 
   it("returns null for blank output", () => {
     expect(parseInstalledCoreVersion("", "SPRESENSE:spresense")).toBeNull();
+  });
+});
+
+describe("parseInstalledLibraryNames", () => {
+  it("extracts library names from installed_libraries", () => {
+    const json = JSON.stringify({
+      installed_libraries: [
+        { library: { name: "Adafruit BMP280 Library" } },
+        { library: { name: "BMI160-Arduino" } },
+      ],
+    });
+    expect(parseInstalledLibraryNames(json)).toEqual(["Adafruit BMP280 Library", "BMI160-Arduino"]);
+  });
+
+  it("returns an empty list for blank output", () => {
+    expect(parseInstalledLibraryNames("")).toEqual([]);
+  });
+
+  it("skips entries without a library name", () => {
+    const json = JSON.stringify({ installed_libraries: [{ library: {} }, {}] });
+    expect(parseInstalledLibraryNames(json)).toEqual([]);
   });
 });
 
