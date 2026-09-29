@@ -1,0 +1,10 @@
+{
+  "SPRESENSE_SENSORADDON_ACCEL": "加速度センサーの %1 の値(G)",
+  "SPRESENSE_SENSORADDON_ACCEL_TOOLTIP": "センサー拡張ボードの加速度センサー(BMI160)から、X・Y・Z軸それぞれの加速度をG(重力加速度)の単位で読み取ります。センサー拡張ボードをSPRESENSEに接続しておく必要があります。",
+
+  "SPRESENSE_SENSORADDON_PRESSURE": "気圧センサーの気圧(hPa)",
+  "SPRESENSE_SENSORADDON_PRESSURE_TOOLTIP": "センサー拡張ボードの気圧センサー(BMP280)から、気圧をhPa(ヘクトパスカル)の単位で読み取ります。センサー拡張ボードをSPRESENSEに接続しておく必要があります。",
+
+  "SPRESENSE_SENSORADDON_TEMPERATURE": "気圧センサーの温度(℃)",
+  "SPRESENSE_SENSORADDON_TEMPERATURE_TOOLTIP": "センサー拡張ボードの気圧センサー(BMP280)から、温度を℃(セ氏)の単位で読み取ります。センサー拡張ボードをSPRESENSEに接続しておく必要があります。"
+}

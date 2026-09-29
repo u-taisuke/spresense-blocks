@@ -1,5 +1,6 @@
 import boardJson from "../board.json" with { type: "json" };
 import pinsJson from "../pins.json" with { type: "json" };
+import sensorAddonJson from "../sensorAddon.json" with { type: "json" };
 
 export interface BoardDefinition {
   id: string;
@@ -35,6 +36,21 @@ export interface PinMap {
 
 export const board: BoardDefinition = boardJson;
 export const pins: PinMap = pinsJson as PinMap;
+
+/**
+ * arduino-cli ライブラリの依存情報。
+ * `libraryManagerName` があれば `lib install <name>` で、`gitUrl` があれば
+ * `lib install --git-url <url>` でインストールする(両方同時に指定はしない)。
+ */
+export interface LibraryDependency {
+  /** `arduino-cli lib list` に表示される名前。インストール済み判定に使う。 */
+  name: string;
+  libraryManagerName?: string;
+  /** 末尾に `#<commit-sha>` を含め、必ずコミットを固定すること。 */
+  gitUrl?: string;
+}
+
+export const sensorAddonLibraries: LibraryDependency[] = sensorAddonJson.libraries;
 
 /** `arduino-cli core install` に渡す、バージョン固定済みのターゲット文字列。 */
 export const boardCoreInstallTarget = `${board.coreId}@${board.coreVersion}`;

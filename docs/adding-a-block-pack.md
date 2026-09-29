@@ -42,23 +42,44 @@ packages/block-packs/<パック名>/
 
 ## 3. コード生成を書く (`generators.ts`)
 
-- 生成関数は「このブロック1個分のコード(文字列)」を返すだけにする。
+- **`registerGenerators(generator: Blockly.Generator, builder: SketchBuilder)` という関数を export する。**
+  `new Blockly.Generator(...)` をパック側で作らないこと。アプリ全体では
+  (core-io・sensor-addonなど複数パックのブロックが同じワークスペースに混在するため)
+  共有の `Blockly.Generator` インスタンスが1つだけ存在し、各パックはそこに
+  自分の `forBlock` を登録するだけ、という役割分担になっている
+  (合成は `apps/editor/src/renderer/src/codegen.ts` が行う)。
+  `scrub_`(次ブロックへの連結の設定)もそちらの責任なので、パック側では設定しない。
+- 生成関数自体は「このブロック1個分のコード(文字列、または値ブロックなら `[式, 優先順位]`)」を
+  返すだけにする。
 - `#include` が必要なら `builder.addInclude(...)`、初期化コードが必要なら
   `builder.addSetup(重複排除キー, コード)` を **副作用として** 呼ぶ。
   同じキーで複数回呼んでも1回しか出力されないので、同じ機能を使うブロックが複数あっても安全。
-- ワークスペース全体を走査してブロックをコードに変換する部分(`generateSketch`)は
-  `codegen-core` の `SketchBuilder` を使い回すだけで、パック側で作り直す必要はない。
+- 最終的な `.ino` の組み立て(`SketchBuilder`)は Blockly非依存なので、パック側で作り直す必要はない。
 - 複数ステートメントを連結するブロック(繰り返しブロックなど)を作る場合は、
   [architecture.md](./architecture.md) の `scrub_` の節を必ず読むこと
   (Blockly の既定動作では次ブロックへの連結が自動で行われない)。
+- パック単体でのテスト・動作確認用に、`registerGenerators` を呼び出して単体で完結する
+  `generateSketch(workspace, builder)` も一緒に export しておくとよい(既存パックを参照)。
+  値ブロックしか持たないパック(sensor-addonなど)は、テストでは `generator.forBlock[type]` を
+  直接呼び出して返り値と `builder.build()` の副作用を確認すればよい
+  (`sensor-addon/test/generators.test.ts` を参照)。
 
-## 4. ツールボックスに登録する
+## 4. ツールボックス・コード生成をアプリに登録する
 
 `toolbox.json` はカテゴリ定義の**配列**として書く(1パックが複数カテゴリを持ってもよい)。
 `colour` の値は `blocks.ts` で使った `BlockCategoryColour` の値と一致させること(JSONからは
 TypeScriptの定数を直接参照できないため、手で合わせる必要がある)。
-`apps/editor/src/renderer/src/BlocklyWorkspace.tsx` の `toolbox.contents` に
-`...パック名Categories` の形でスプレッドして追加する(既存パックの登録行をコピーすればよい)。
+
+`apps/editor/src/renderer/src/BlocklyWorkspace.tsx` で `installXxxMessages()` /
+`installXxxBlocks()` を呼び、`toolbox.contents` に `...パック名Categories` をスプレッドで追加する。
+`apps/editor/src/renderer/src/codegen.ts` で `registerXxxGenerators(generator, builder)` を
+1行呼ぶ。どちらも既存パックの登録行をコピーすればよい。
+
+もしパックが Arduino Library Manager や GitHub 上のライブラリ(BMI160Gen など)を必要とするなら、
+`packages/board-spresense` に `LibraryDependency` の配列としてデータを足し、
+`apps/editor/src/main/setup.ts` の `REQUIRED_LIBRARIES` に追加する(初回起動時に自動インストール
+されるようになる)。git-url でのインストールは必ずコミットハッシュを固定すること
+(`packages/board-spresense/sensorAddon.json` を参照)。
 
 ## 5. テストを書く
 

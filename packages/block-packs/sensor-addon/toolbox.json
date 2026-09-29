@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "category",
+    "name": "拡張センサー",
+    "colour": "#5CB1D6",
+    "contents": [
+      { "kind": "block", "type": "spresense_sensor_accel" },
+      { "kind": "block", "type": "spresense_sensor_pressure" },
+      { "kind": "block", "type": "spresense_sensor_temperature" }
+    ]
+  }
+]

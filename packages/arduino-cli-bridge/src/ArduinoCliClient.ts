@@ -110,6 +110,31 @@ export class ArduinoCliClient {
     return parseBoardList(stdout);
   }
 
+  /** Arduino Library Manager からライブラリをインストールする。 */
+  async installLibrary(libraryManagerName: string, events: ArduinoCliEvents = {}): Promise<void> {
+    await this.run(["lib", "install", libraryManagerName], events);
+  }
+
+  /**
+   * git リポジトリから直接ライブラリをインストールする(Library Manager未登録のライブラリ用)。
+   * `library.enable_unsafe_install` が有効な設定(config-file)でないと失敗するので注意。
+   * @param gitUrl 末尾に `#<commit-sha>` を付けてコミットを固定すること(再現性とセキュリティのため)。
+   */
+  async installLibraryFromGit(gitUrl: string, events: ArduinoCliEvents = {}): Promise<void> {
+    await this.run(["lib", "install", "--git-url", gitUrl], events);
+  }
+
+  /** インストール済みライブラリの名前一覧(`lib list` に出る表示名)を返す。 */
+  async getInstalledLibraryNames(): Promise<string[]> {
+    let stdout = "";
+    await this.run(["lib", "list", "--format", "json"], {
+      onStdout: (chunk) => {
+        stdout += chunk;
+      },
+    });
+    return parseInstalledLibraryNames(stdout);
+  }
+
   private run(args: string[], events: ArduinoCliEvents): Promise<void> {
     if (this.busy) {
       return Promise.reject(new ArduinoCliBusyError());
@@ -212,4 +237,17 @@ export function parseInstalledCoreVersion(rawJson: string, coreId: string): stri
   };
   const platform = parsed.platforms?.find((p) => p.id === coreId);
   return platform?.installed_version ?? null;
+}
+
+/** `arduino-cli lib list --format json` の出力から、インストール済みライブラリ名の一覧を取り出す。 */
+export function parseInstalledLibraryNames(rawJson: string): string[] {
+  if (!rawJson.trim()) {
+    return [];
+  }
+  const parsed = JSON.parse(rawJson) as {
+    installed_libraries?: Array<{ library?: { name?: string } }>;
+  };
+  return (parsed.installed_libraries ?? [])
+    .map((entry) => entry.library?.name)
+    .filter((name): name is string => Boolean(name));
 }

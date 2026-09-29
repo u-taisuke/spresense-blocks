@@ -1,6 +1,10 @@
 import { ipcMain, type BrowserWindow } from "electron";
 import { ArduinoCliClient, ArduinoCliInstaller, type InstallProgressEvent } from "@spresense-blocks/arduino-cli-bridge";
-import { board } from "@spresense-blocks/board-spresense";
+import { board, sensorAddonLibraries } from "@spresense-blocks/board-spresense";
+
+// 現時点でブロックパックが必要とする追加ライブラリの一覧。
+// 新しいブロックパックが arduino-cli ライブラリを必要とするようになったら、ここに追記する。
+const REQUIRED_LIBRARIES = [...sensorAddonLibraries];
 
 /**
  * arduino-cli本体のダウンロード〜SPRESENSEコアのインストールまでを、
@@ -37,7 +41,7 @@ export class SetupManager {
       return Promise.resolve();
     }
     if (!this.readyPromise) {
-      this.readyPromise = this.installer.ensureReady(onProgress).catch((error: unknown) => {
+      this.readyPromise = this.installer.ensureReady(onProgress, REQUIRED_LIBRARIES).catch((error: unknown) => {
         this.readyPromise = null;
         throw error;
       });

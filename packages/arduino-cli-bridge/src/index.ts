@@ -4,7 +4,11 @@ export {
   ArduinoCliExitError,
   ArduinoCliTimeoutError,
 } from "./ArduinoCliClient.js";
-export { parseBoardList, parseInstalledCoreVersion } from "./ArduinoCliClient.js";
+export {
+  parseBoardList,
+  parseInstalledCoreVersion,
+  parseInstalledLibraryNames,
+} from "./ArduinoCliClient.js";
 export type { ArduinoCliEvents, DetectedBoard } from "./ArduinoCliClient.js";
 export {
   resolveArduinoCliPath,
@@ -17,5 +21,6 @@ export {
   ArduinoCliInstaller,
   type InstallProgressEvent,
   type PlatformAsset,
+  type LibraryDependency,
   getPlatformAsset,
 } from "./installer.js";

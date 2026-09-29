@@ -41,16 +41,31 @@ SPRESENSE 実機
   すべて `apps/editor/src/preload` の narrow API 経由で main プロセスに依頼する。
   また同時に2つ以上のコマンドを実行できないようにしている(ビルドキャッシュ破損防止)。
 
+- **arduino-cli本体・SPRESENSEコア・追加ライブラリは、アプリが自動でダウンロード・インストールする。**
+  (`packages/arduino-cli-bridge/src/installer.ts` の `ArduinoCliInstaller`)。すべて
+  Electronの `userData` 配下の専用ディレクトリに閉じ込め、ユーザーが元々持っている
+  Arduino IDE 環境には一切触れない。ブロックパックが追加のライブラリを必要とする場合は
+  `packages/board-spresense` に `LibraryDependency` として登録し、
+  `apps/editor/src/main/setup.ts` の `REQUIRED_LIBRARIES` に足す(詳しくは
+  [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)。
+
 - **機能ごとに「ブロックパック」として分離してある。**
   詳しくは [adding-a-block-pack.md](./adding-a-block-pack.md) を参照。
 
 ## Blockly のコード生成で気をつけていること
 
+**`Blockly.Generator` のインスタンスはアプリ全体で1つだけ。** 複数のブロックパック
+(core-io・sensor-addonなど)のブロックが同じワークスペースに混在するため、各パックが
+それぞれ `new Blockly.Generator(...)` してはいけない。各パックは `registerGenerators(generator, builder)`
+という関数だけを export し、`apps/editor/src/renderer/src/codegen.ts` がその1つの共有インスタンスに
+全パック分の `forBlock` をまとめて登録する。パックを追加するたびに、この合成ファイルに
+1行足すだけでよい設計になっている。
+
 `Blockly.Generator` の既定の `scrub_` はコードをそのまま返すだけで、
 「次に接続されたブロックのコードをつなげる」処理は自動では行われない
 (JavaScript/Python 等の言語別ジェネレータが各自 `scrub_` でこれを実装している)。
-そのため独自の Arduino 用ジェネレータでも、`scrub_` で次ブロックへの連結を明示的に実装する
-必要がある(`packages/block-packs/core-io/src/generators.ts` を参照)。
+そのため `codegen.ts` の共有ジェネレータ生成時に、`scrub_` で次ブロックへの連結を
+明示的に実装している(各パックの `generateSketch`(パック単体テスト用)も同様に自前で設定する)。
 
 また `blockly/core` はコアのみを含み、組み込みブロック・組み込み言語ジェネレータ・
 英語メッセージは含まれない(それらは `blockly` パッケージ全体を使う場合のみ入る)。

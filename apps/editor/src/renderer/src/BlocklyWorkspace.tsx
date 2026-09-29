@@ -2,22 +2,31 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import * as Blockly from "blockly/core";
 import * as jaLocale from "blockly/msg/ja"; // Blockly の日本語UIメッセージ(コンテキストメニュー等)
 import {
-  installBlocks,
-  installMessages,
+  installBlocks as installCoreIoBlocks,
+  installMessages as installCoreIoMessages,
   toolbox as coreIoToolboxCategories,
-  generateSketch,
 } from "@spresense-blocks/block-pack-core-io";
+import {
+  installBlocks as installSensorAddonBlocks,
+  installMessages as installSensorAddonMessages,
+  toolbox as sensorAddonToolboxCategories,
+} from "@spresense-blocks/block-pack-sensor-addon";
 import { SketchBuilder } from "@spresense-blocks/codegen-core";
+import { generateSketch } from "./codegen";
 
 Blockly.setLocale(jaLocale as unknown as { [key: string]: string });
-installMessages();
-installBlocks();
+// 新しいブロックパックを追加したら、ここに installXxxMessages()/installXxxBlocks() を足していく
+// (docs/adding-a-block-pack.md 参照)。
+installCoreIoMessages();
+installCoreIoBlocks();
+installSensorAddonMessages();
+installSensorAddonBlocks();
 
 // 各ブロックパックはツールボックス・カテゴリを(複数持つ場合もあるため)配列で提供する。
 // 新しいパックを追加するときは、ここに ...パック名Categories を足していく。
 const toolbox = {
   kind: "categoryToolbox",
-  contents: [...coreIoToolboxCategories],
+  contents: [...coreIoToolboxCategories, ...sensorAddonToolboxCategories],
 } as const;
 
 // generateSketch は毎回 builder.reset() してから組み立てるので、使い回して問題ない。

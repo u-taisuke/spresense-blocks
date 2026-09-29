@@ -47,10 +47,30 @@ export function getPlatformAsset(version: string): PlatformAsset {
 }
 
 export interface InstallProgressEvent {
-  step: "check" | "download-cli" | "extract-cli" | "write-config" | "update-index" | "install-core" | "done";
+  step:
+    | "check"
+    | "download-cli"
+    | "extract-cli"
+    | "write-config"
+    | "update-index"
+    | "install-core"
+    | "install-library"
+    | "done";
   message: string;
   /** arduino-cli 自身の生ログなど、詳細を表示したい場合。 */
   detail?: string;
+}
+
+/**
+ * arduino-cli ライブラリの依存情報。`board-spresense` パッケージの同名の型と構造は同じ
+ * (循環依存を避けるためこちらで独立に定義している。呼び出し側はどちらの型でも渡せる)。
+ */
+export interface LibraryDependency {
+  /** `arduino-cli lib list` に表示される名前。インストール済み判定に使う。 */
+  name: string;
+  libraryManagerName?: string;
+  /** 末尾に `#<commit-sha>` を含め、必ずコミットを固定すること。 */
+  gitUrl?: string;
 }
 
 type ProgressCallback = (event: InstallProgressEvent) => void;
@@ -201,16 +221,51 @@ export class ArduinoCliInstaller {
       "directories:",
       `  data: ${yamlString(dataDir)}`,
       `  user: ${yamlString(userDir)}`,
+      "library:",
+      // sensor-addon パックのBMI160ライブラリのように、Library Managerに登録されていない
+      // ライブラリを `lib install --git-url` で取得するために必要。
+      // コミットを固定したURLしか使わないので、このアプリの範囲では安全に有効化できる。
+      "  enable_unsafe_install: true",
       "",
     ].join("\n");
     writeFileSync(this.configFilePath, yaml, "utf8");
   }
 
+  private async ensureLibrariesInstalled(
+    client: ArduinoCliClient,
+    libraries: LibraryDependency[],
+    onProgress: ProgressCallback
+  ): Promise<void> {
+    if (libraries.length === 0) {
+      return;
+    }
+    const installedNames = await client.getInstalledLibraryNames();
+
+    for (const lib of libraries) {
+      if (installedNames.includes(lib.name)) {
+        continue;
+      }
+      onProgress({ step: "install-library", message: `${lib.name} をインストールしています...` });
+      const events = {
+        onStdout: (chunk: string) =>
+          onProgress({ step: "install-library", message: `${lib.name} をインストールしています...`, detail: chunk }),
+        onStderr: (chunk: string) =>
+          onProgress({ step: "install-library", message: `${lib.name} をインストールしています...`, detail: chunk }),
+      };
+      if (lib.gitUrl) {
+        await client.installLibraryFromGit(lib.gitUrl, events);
+      } else if (lib.libraryManagerName) {
+        await client.installLibrary(lib.libraryManagerName, events);
+      }
+    }
+  }
+
   /**
-   * arduino-cli本体・設定・SPRESENSEコアが揃っていることを確認し、足りなければ用意する。
-   * 何度呼んでも安全(既に揃っていれば何もしない)。
+   * arduino-cli本体・設定・SPRESENSEコア・(指定があれば)追加ライブラリが揃っていることを確認し、
+   * 足りなければ用意する。何度呼んでも安全(既に揃っていれば何もしない)。
+   * @param libraries センサー拡張ボードなど、特定のブロックパックが必要とする追加ライブラリ。
    */
-  async ensureReady(onProgress: ProgressCallback): Promise<void> {
+  async ensureReady(onProgress: ProgressCallback, libraries: LibraryDependency[] = []): Promise<void> {
     onProgress({ step: "check", message: "セットアップ状況を確認しています..." });
 
     if (!this.isArduinoCliInstalled()) {
@@ -240,6 +295,8 @@ export class ArduinoCliInstaller {
           onProgress({ step: "install-core", message: "SPRESENSEのボード情報をインストールしています...", detail: chunk }),
       });
     }
+
+    await this.ensureLibrariesInstalled(client, libraries, onProgress);
 
     onProgress({ step: "done", message: "準備が完了しました。" });
   }
