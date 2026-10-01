@@ -24,8 +24,15 @@ const NOTE_TABLE: Record<number, string> = {
   71: "71_B4",
 };
 
-/** 「音の長さを設定する」ブロックが無い場合に使う既定値(ミリ秒)。 */
-const DEFAULT_NOTE_DURATION_MS = 300;
+/**
+ * 「大きさ」(0〜100、Scratch等のボリューム感覚に合わせた目盛り)を、
+ * ssprocLib(SDSink)が実際に受け取るセンチベル値(-1020〜+120、0が元の音量)に変換する。
+ * 100 → 0(元の音量)、0 → -1020(ほぼ無音)になるよう線形に対応させている。
+ * +120(ブースト)側は使わない(歪みの原因になりやすいため)。
+ */
+function volumeToCentibels(volume: number): number {
+  return Math.round(((volume - 100) * 1020) / 100);
+}
 
 /**
  * instrument パック(Sony公式 ssprocLib を使った「ゆる楽器」)のブロック用コード生成関数を、
@@ -42,12 +49,19 @@ const DEFAULT_NOTE_DURATION_MS = 300;
  * このパックは「音を鳴らす」ことだけに専念する設計に変更した。そのため、「音を鳴らす」ブロックは
  * ボタンの押しっぱなし(レベル)検知ではなく、呼ばれるたびに「今鳴っていなければ鳴らす」
  * (`spresenseNoteStopAt[note]` が0=鳴っていない、を見て判定)という単純な引き金として働く。
- * 鳴らした音は `spresenseNoteDurationMs`(既定値またはユーザーが設定した値)が経過すると
- * 自動的に止まる。この「経過時間チェック」は `spresense_instrument_setup` ブロックが毎ループ
- * 無条件で実行するコード(`spresenseInstrument.update()`と同じ場所)に組み込んである。
- * こうすることで、「音を鳴らす」ブロックが(ボタンが離されて)呼ばれなくなった後でも、
- * 設定した長さぴったりで音を止められる(呼ばれたときだけ判定するのでは、ボタンを離した
- * タイミングでしか止められない)。
+ * 鳴らした音は、このブロック自身に書かれた長さ(ミリ秒)が経過すると自動的に止まる。
+ * この「経過時間チェック」は `spresense_instrument_setup` ブロックが毎ループ無条件で実行する
+ * コード(`spresenseInstrument.update()`と同じ場所)に組み込んである。こうすることで、
+ * 「音を鳴らす」ブロックが(ボタンが離されて)呼ばれなくなった後でも、設定した長さぴったりで
+ * 音を止められる(呼ばれたときだけ判定するのでは、ボタンを離したタイミングでしか止められない)。
+ *
+ * **設計メモ(「大きさ」が全体の音量である理由)**: ssprocLibの `SDSink` は、ノートごとの音量
+ * (MIDIのvelocity)を実際には使っていない(`sendNoteOn`のvelocity引数は「0なら音を止める」判定に
+ * しか使われない、`SDSink.cpp`で確認済み)。音量を変えられる唯一の方法は
+ * `setParam(Filter::PARAMID_OUTPUT_LEVEL, ...)`で、これはSDSinkインスタンス全体(鳴っている
+ * すべての音)にかかる共通の音量つまみ。そのため「音を鳴らす」ブロックの「大きさ」は、
+ * このブロックの音だけでなく、同時に鳴っている他の音の大きさも一緒に変えてしまう
+ * (ブロックのtooltipで明記している)。
  */
 export function registerGenerators(generator: Blockly.Generator, builder: SketchBuilder): void {
   generator.forBlock["spresense_instrument_setup"] = (block: Blockly.Block) => {
@@ -95,34 +109,23 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
 
   generator.forBlock["spresense_instrument_play_note"] = (block: Blockly.Block) => {
     const note = block.getFieldValue("NOTE") as string;
+    const durationMs = Math.max(0, Math.floor(Number(block.getFieldValue("DURATION_MS"))));
+    const volume = Math.min(100, Math.max(0, Math.floor(Number(block.getFieldValue("VOLUME")))));
+    const centibels = volumeToCentibels(volume);
 
     builder.addInclude("<SDSink.h>");
     builder.addGlobal("instrument-note-stop-at", "unsigned long spresenseNoteStopAt[128] = {0};");
-    builder.addGlobal(
-      "instrument-note-duration",
-      `unsigned long spresenseNoteDurationMs = ${DEFAULT_NOTE_DURATION_MS};`
-    );
 
     // 既に鳴っている音は、自然に止まる(spresenseNoteStopAt[note]が0に戻る)まで鳴らし直さない。
     // これにより、「もし(ボタンが押されている)なら 音を鳴らす」のように毎ループ呼ばれても、
     // ブツブツと音が途切れず、設定した長さぶん自然に鳴り続ける。
     return (
       `if (spresenseNoteStopAt[${note}] == 0) {\n` +
+      `    spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, ${centibels});\n` +
       `    spresenseInstrument.sendNoteOn(${note}, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n` +
-      `    spresenseNoteStopAt[${note}] = millis() + spresenseNoteDurationMs;\n` +
+      `    spresenseNoteStopAt[${note}] = millis() + ${durationMs};\n` +
       "  }\n"
     );
-  };
-
-  generator.forBlock["spresense_instrument_set_duration"] = (block: Blockly.Block) => {
-    const durationMs = Math.max(0, Math.floor(Number(block.getFieldValue("DURATION_MS"))));
-
-    builder.addGlobal(
-      "instrument-note-duration",
-      `unsigned long spresenseNoteDurationMs = ${DEFAULT_NOTE_DURATION_MS};`
-    );
-
-    return `spresenseNoteDurationMs = ${durationMs};\n`;
   };
 }
 

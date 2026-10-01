@@ -199,48 +199,41 @@ const SAMPLES: Record<string, unknown> = {
                 fields: { VOICE: "Piano" },
                 next: {
                   block: {
-                    type: "spresense_instrument_set_duration",
-                    id: "dur1",
-                    fields: { DURATION_MS: 500 },
+                    type: "spresense_if",
+                    id: "if1",
+                    inputs: {
+                      CONDITION: {
+                        block: {
+                          type: "spresense_digital_read",
+                          id: "dr1",
+                          fields: { PIN: "PIN_D04" },
+                        },
+                      },
+                      DO: {
+                        block: {
+                          type: "spresense_instrument_play_note",
+                          id: "play1",
+                          fields: { NOTE: "60", DURATION_MS: 500, VOLUME: 100 },
+                        },
+                      },
+                    },
                     next: {
                       block: {
                         type: "spresense_if",
-                        id: "if1",
+                        id: "if2",
                         inputs: {
                           CONDITION: {
                             block: {
                               type: "spresense_digital_read",
-                              id: "dr1",
-                              fields: { PIN: "PIN_D04" },
+                              id: "dr2",
+                              fields: { PIN: "PIN_D05" },
                             },
                           },
                           DO: {
                             block: {
                               type: "spresense_instrument_play_note",
-                              id: "play1",
-                              fields: { NOTE: "60" },
-                            },
-                          },
-                        },
-                        next: {
-                          block: {
-                            type: "spresense_if",
-                            id: "if2",
-                            inputs: {
-                              CONDITION: {
-                                block: {
-                                  type: "spresense_digital_read",
-                                  id: "dr2",
-                                  fields: { PIN: "PIN_D05" },
-                                },
-                              },
-                              DO: {
-                                block: {
-                                  type: "spresense_instrument_play_note",
-                                  id: "play2",
-                                  fields: { NOTE: "62" },
-                                },
-                              },
+                              id: "play2",
+                              fields: { NOTE: "62", DURATION_MS: 800, VOLUME: 60 },
                             },
                           },
                         },

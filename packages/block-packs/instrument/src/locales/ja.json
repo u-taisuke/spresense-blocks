@@ -5,11 +5,8 @@
   "SPRESENSE_INSTRUMENT_VOICE_PIANO": "ピアノ",
   "SPRESENSE_INSTRUMENT_VOICE_SAX": "サックス",
 
-  "SPRESENSE_INSTRUMENT_PLAY_NOTE": "「%1」の音を鳴らす",
-  "SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP": "選んだ音の高さを鳴らします。音の長さは「音の長さを〜ミリ秒にする」ブロックで変えられます(何も設定しなければ0.3秒)。ボタンが押されたときに鳴らしたい場合は、センシングの「デジタルピンがONになっている」ブロックと「もし〜なら」ブロックを組み合わせてください。「ゆる楽器を鳴らす」ブロックと組み合わせて、「ずっと」の中で使います。",
-
-  "SPRESENSE_INSTRUMENT_SET_DURATION": "音の長さを %1 ミリ秒にする",
-  "SPRESENSE_INSTRUMENT_SET_DURATION_TOOLTIP": "これ以降の「音を鳴らす」ブロックで鳴らす音の長さ(ミリ秒)を設定します。1000ミリ秒 = 1秒です。音源のもともとの長さ(約1.2秒)より長くは鳴らせません。",
+  "SPRESENSE_INSTRUMENT_PLAY_NOTE": "「%1」の音を、長さ %2 ミリ秒、大きさ %3 で鳴らす",
+  "SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP": "選んだ音の高さを、指定した長さ(ミリ秒。1000ミリ秒=1秒)と大きさ(0〜100、100がもとの音量)で鳴らします。音源のもともとの長さ(約1.2秒)より長くは鳴らせません。「大きさ」は今鳴っている他の音にも影響します(すべての音をまとめて鳴らす1つの音量つまみのため)。ボタンが押されたときに鳴らしたい場合は、センシングの「デジタルピンがONになっている」ブロックと「もし〜なら」ブロックを組み合わせてください。「ゆる楽器を鳴らす」ブロックと組み合わせて、「ずっと」の中で使います。",
 
   "SPRESENSE_INSTRUMENT_NOTE_LOW_DO": "ひくい ド",
   "SPRESENSE_INSTRUMENT_NOTE_LOW_RE": "ひくい レ",

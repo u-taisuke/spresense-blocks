@@ -55,22 +55,18 @@ export function installBlocks(): void {
     {
       // ボタンの状態そのものは扱わない(センシングカテゴリの「デジタルピンがONになっている」+
       // 「もし〜なら」と組み合わせて使ってもらう想定)。このブロックは「音を鳴らす」ことだけに専念する。
+      // 高さ(音階)・長さ(ミリ秒)・大きさ(0〜100)の3つをこの1ブロックにまとめている。
       type: "spresense_instrument_play_note",
       message0: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_NOTE}",
-      args0: [{ type: "field_dropdown", name: "NOTE", options: NOTE_OPTIONS }],
+      args0: [
+        { type: "field_dropdown", name: "NOTE", options: NOTE_OPTIONS },
+        { type: "field_number", name: "DURATION_MS", value: 300, min: 0, precision: 1 },
+        { type: "field_number", name: "VOLUME", value: 100, min: 0, max: 100, precision: 1 },
+      ],
       previousStatement: null,
       nextStatement: null,
       colour: BlockCategoryColour.SOUND,
       tooltip: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP}",
-    },
-    {
-      type: "spresense_instrument_set_duration",
-      message0: "%{BKY_SPRESENSE_INSTRUMENT_SET_DURATION}",
-      args0: [{ type: "field_number", name: "DURATION_MS", value: 300, min: 0, precision: 1 }],
-      previousStatement: null,
-      nextStatement: null,
-      colour: BlockCategoryColour.SOUND,
-      tooltip: "%{BKY_SPRESENSE_INSTRUMENT_SET_DURATION_TOOLTIP}",
     },
   ]);
 }

@@ -5,8 +5,7 @@
     "colour": "#CF63CF",
     "contents": [
       { "kind": "block", "type": "spresense_instrument_setup" },
-      { "kind": "block", "type": "spresense_instrument_play_note" },
-      { "kind": "block", "type": "spresense_instrument_set_duration" }
+      { "kind": "block", "type": "spresense_instrument_play_note" }
     ]
   }
 ]

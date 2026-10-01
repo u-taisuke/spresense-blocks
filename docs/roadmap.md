@@ -89,14 +89,20 @@ electron-builderのインストール先フォルダ名(`@spresense-blockseditor
   - リポジトリ: https://github.com/SonySemiconductorSolutions/ssih-music。Arduino Library Managerには
     未登録のため、他のライブラリと同様GitHubからコミット固定(タグv1.3.0)で自動取得する
   - `examples/ButtonDrum` の構成(ボタン入力→SDSinkでWAV再生)を参考にブロック化。
-    「ゆる楽器を鳴らす(音色: ピアノ/サックス)」(SDSinkの初期化・毎ループの`update()`を隠す)、
-    「〜の音を鳴らす」(2オクターブ分のドレミファソラシ)、「音の長さを〜ミリ秒にする」の3ブロック
-  - **設計変更(2026-10-01)**: 当初はボタン検知も1つのブロックに含めていたが、ピンの状態を見る
+    「ゆる楽器を鳴らす(音色: ピアノ/サックス)」(SDSinkの初期化・毎ループの`update()`を隠す)と、
+    「"〜"の音を、長さ〜ミリ秒、大きさ〜で鳴らす」(音の高さ・長さ・大きさを1ブロックにまとめた)の2ブロック
+  - **設計変更(2026-10-01、2回)**: 当初はボタン検知も1つのブロックに含めていたが、ピンの状態を見る
     機能はcore-ioの「デジタルピンがONになっている」+「もし〜なら」で既にできるため、
     「ゆる楽器」パックは音を鳴らすことだけに専念する設計に変更した。「音を鳴らす」ブロックは
     呼ばれるたびに「今鳴っていなければ鳴らす」引き金として働き、設定した長さが経過すると
     (ブロックが再度呼ばれなくても)`spresense_instrument_setup`が毎ループ行う経過時間チェックで
-    自動的に音を止める。詳しくは `packages/block-packs/instrument/src/generators.ts` のコメントを参照
+    自動的に音を止める。長さは当初「音の長さを設定する」という別ブロックで共有設定にしていたが、
+    「高さ・長さ・大きさをセットにしたブロックにしてほしい」という要望を受けて1ブロックにまとめ直した。
+    「大きさ」はssprocLib(SDSink)がノートごとの音量制御を持たない(MIDIのvelocityは「0なら音を止める」
+    判定にしか使われない)ため、`setParam(Filter::PARAMID_OUTPUT_LEVEL, ...)`という
+    SDSinkインスタンス全体にかかる共通の音量つまみとして実装している(同時に鳴っている他の音にも
+    影響する。ブロックのtooltipで明記)。詳しくは
+    `packages/block-packs/instrument/src/generators.ts` のコメントを参照
   - ssprocLibのexample自体が使っている`Button`ヘルパークラス(チャタリング防止)は、SketchBuilderの
     出力順(クラス定義が常にグローバル変数より後に出る)と相性が悪いため採用していない
     (詳しくは [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)

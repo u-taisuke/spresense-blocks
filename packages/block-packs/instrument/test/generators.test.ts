@@ -45,33 +45,35 @@ describe("instrument generators", () => {
     expect(sketch).toContain("if (!spresenseInstrument.begin())");
   });
 
-  it("play_note block only triggers sendNoteOn when the note isn't already playing", () => {
+  it("play_note block sets the shared volume, triggers sendNoteOn, and records a note-specific duration", () => {
     const workspace = new Blockly.Workspace();
     const { generator, builder } = createGeneratorAndBuilder();
     const block = workspace.newBlock("spresense_instrument_play_note");
     block.setFieldValue("60", "NOTE");
+    block.setFieldValue(800, "DURATION_MS");
+    block.setFieldValue(100, "VOLUME");
 
     const code = generator.forBlock["spresense_instrument_play_note"](block, generator) as string;
 
     expect(code).toContain("if (spresenseNoteStopAt[60] == 0) {");
+    // VOLUME=100(最大)はセンチベル0(元の音量)に変換される。
+    expect(code).toContain("spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, 0);");
     expect(code).toContain("spresenseInstrument.sendNoteOn(60, DEFAULT_VELOCITY, DEFAULT_CHANNEL);");
-    expect(code).toContain("spresenseNoteStopAt[60] = millis() + spresenseNoteDurationMs;");
+    expect(code).toContain("spresenseNoteStopAt[60] = millis() + 800;");
 
-    // 音の長さブロックが無くても、既定値(300ms)がグローバル変数として宣言される。
-    const sketch = builder.build();
-    expect(sketch).toContain("unsigned long spresenseNoteDurationMs = 300;");
+    expect(builder.build()).toContain("unsigned long spresenseNoteStopAt[128] = {0};");
   });
 
-  it("set_duration block updates the shared duration variable", () => {
+  it("maps VOLUME=0 to the quietest centibel value", () => {
     const workspace = new Blockly.Workspace();
-    const { generator, builder } = createGeneratorAndBuilder();
-    const block = workspace.newBlock("spresense_instrument_set_duration");
-    block.setFieldValue(800, "DURATION_MS");
+    const { generator } = createGeneratorAndBuilder();
+    const block = workspace.newBlock("spresense_instrument_play_note");
+    block.setFieldValue("62", "NOTE");
+    block.setFieldValue(0, "VOLUME");
 
-    const code = generator.forBlock["spresense_instrument_set_duration"](block, generator) as string;
+    const code = generator.forBlock["spresense_instrument_play_note"](block, generator) as string;
 
-    expect(code).toBe("spresenseNoteDurationMs = 800;\n");
-    expect(builder.build()).toContain("unsigned long spresenseNoteDurationMs = 300;");
+    expect(code).toContain("spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, -1020);");
   });
 
   it("works together with core-io's digital-read + if blocks for button sensing", async () => {
