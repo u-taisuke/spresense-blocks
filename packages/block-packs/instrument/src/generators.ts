@@ -35,6 +35,26 @@ function volumeToCentibels(volume: number): number {
 }
 
 /**
+ * 「音を鳴らす」「和音を鳴らす」どちらも使う、共通の鳴らす処理のコード片を組み立てる。
+ * 渡した全てのノートが今鳴っていない(`spresenseNoteStopAt[note] == 0`)ときだけ、
+ * まとめて鳴らし始める(和音の場合、片方だけ鳴っている状態で片方だけ鳴らし直す、という
+ * ズレを避けるため)。
+ */
+function buildPlayCode(notes: string[], durationMs: number, volume: number): string {
+  const centibels = volumeToCentibels(volume);
+  const condition = notes.map((note) => `spresenseNoteStopAt[${note}] == 0`).join(" && ");
+
+  const lines = [`if (${condition}) {`, `    spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, ${centibels});`];
+  for (const note of notes) {
+    lines.push(`    spresenseInstrument.sendNoteOn(${note}, DEFAULT_VELOCITY, DEFAULT_CHANNEL);`);
+    lines.push(`    spresenseNoteStopAt[${note}] = millis() + ${durationMs};`);
+  }
+  lines.push("  }");
+
+  return lines.join("\n") + "\n";
+}
+
+/**
  * instrument パック(Sony公式 ssprocLib を使った「ゆる楽器」)のブロック用コード生成関数を、
  * 渡された Blockly.Generator に登録する。
  *
@@ -111,7 +131,6 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
     const note = block.getFieldValue("NOTE") as string;
     const durationMs = Math.max(0, Math.floor(Number(block.getFieldValue("DURATION_MS"))));
     const volume = Math.min(100, Math.max(0, Math.floor(Number(block.getFieldValue("VOLUME")))));
-    const centibels = volumeToCentibels(volume);
 
     builder.addInclude("<SDSink.h>");
     builder.addGlobal("instrument-note-stop-at", "unsigned long spresenseNoteStopAt[128] = {0};");
@@ -119,13 +138,20 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
     // 既に鳴っている音は、自然に止まる(spresenseNoteStopAt[note]が0に戻る)まで鳴らし直さない。
     // これにより、「もし(ボタンが押されている)なら 音を鳴らす」のように毎ループ呼ばれても、
     // ブツブツと音が途切れず、設定した長さぶん自然に鳴り続ける。
-    return (
-      `if (spresenseNoteStopAt[${note}] == 0) {\n` +
-      `    spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, ${centibels});\n` +
-      `    spresenseInstrument.sendNoteOn(${note}, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n` +
-      `    spresenseNoteStopAt[${note}] = millis() + ${durationMs};\n` +
-      "  }\n"
-    );
+    return buildPlayCode([note], durationMs, volume);
+  };
+
+  generator.forBlock["spresense_instrument_play_chord"] = (block: Blockly.Block) => {
+    const note1 = block.getFieldValue("NOTE1") as string;
+    const note2 = block.getFieldValue("NOTE2") as string;
+    const durationMs = Math.max(0, Math.floor(Number(block.getFieldValue("DURATION_MS"))));
+    const volume = Math.min(100, Math.max(0, Math.floor(Number(block.getFieldValue("VOLUME")))));
+
+    builder.addInclude("<SDSink.h>");
+    builder.addGlobal("instrument-note-stop-at", "unsigned long spresenseNoteStopAt[128] = {0};");
+
+    // 2音とも今鳴っていないときだけ、まとめて鳴らし始める(「音を鳴らす」と同じ判定をノートの数だけ行う)。
+    return buildPlayCode([note1, note2], durationMs, volume);
   };
 }
 

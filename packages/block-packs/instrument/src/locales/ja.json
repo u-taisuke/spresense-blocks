@@ -8,6 +8,9 @@
   "SPRESENSE_INSTRUMENT_PLAY_NOTE": "「%1」の音を、長さ %2 ミリ秒、大きさ %3 で鳴らす",
   "SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP": "選んだ音の高さを、指定した長さ(ミリ秒。1000ミリ秒=1秒)と大きさ(0〜100、100がもとの音量)で鳴らします。音源のもともとの長さ(約1.2秒)より長くは鳴らせません。「大きさ」は今鳴っている他の音にも影響します(すべての音をまとめて鳴らす1つの音量つまみのため)。ボタンが押されたときに鳴らしたい場合は、センシングの「デジタルピンがONになっている」ブロックと「もし〜なら」ブロックを組み合わせてください。「ゆる楽器を鳴らす」ブロックと組み合わせて、「ずっと」の中で使います。",
 
+  "SPRESENSE_INSTRUMENT_PLAY_CHORD": "「%1」と「%2」の和音を、長さ %3 ミリ秒、大きさ %4 で鳴らす",
+  "SPRESENSE_INSTRUMENT_PLAY_CHORD_TOOLTIP": "選んだ2つの音の高さを同時に鳴らします(和音)。長さ・大きさの意味は「音を鳴らす」ブロックと同じです。すでに同じ高さの音が鳴っている場合、鳴り終わるまで次の和音は鳴りません。",
+
   "SPRESENSE_INSTRUMENT_NOTE_LOW_DO": "ひくい ド",
   "SPRESENSE_INSTRUMENT_NOTE_LOW_RE": "ひくい レ",
   "SPRESENSE_INSTRUMENT_NOTE_LOW_MI": "ひくい ミ",
