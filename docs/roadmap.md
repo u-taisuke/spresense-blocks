@@ -55,6 +55,14 @@
     ハングしたまま固まらないようにした
   - 失敗時はプロキシ/ファイアウォールの可能性を案内するメッセージを表示
 
+**不具合修正(2026-10-01)**: SPRESENSEを挿したままアプリを起動すると、最初の「コンパイル & 書き込み」が
+再現性高く失敗する不具合があった。原因は `ArduinoCliClient` の排他制御で、実行中のコマンドがあると
+新しいコマンドを即座に `ArduinoCliBusyError` で失敗させていたため、バックグラウンドのポート自動検出
+ポーリング(2秒おき)とユーザーの最初のビルドがたまたま重なると失敗していた(起動直後はポートが
+すぐ見つかって自動選択されるため、ユーザーがすぐビルドを押すとポーリングと重なりやすかった)。
+「busyなら即座に失敗」ではなく「busyなら前のコマンドの完了を待ってから実行する」キュー方式に変更して解消した
+(`packages/arduino-cli-bridge/src/ArduinoCliClient.ts`)。
+
 **実装時に分かったこと**: Electronの `app.getName()` は既定でnpmパッケージ名
 (`@spresense-blocks/editor`、スコープ付き)をそのまま使うため、`userData` のパスが
 `AppData/Roaming/@spresense-blocks/editor`(スラッシュ入りの分かりにくいパス)になり、
@@ -80,13 +88,18 @@ electron-builderのインストール先フォルダ名(`@spresense-blockseditor
 - [x] 「ゆる楽器」パック(Sony公式 ssprocLib = Sound Signal Processing Library for Spresenseを使用)
   - リポジトリ: https://github.com/SonySemiconductorSolutions/ssih-music。Arduino Library Managerには
     未登録のため、他のライブラリと同様GitHubからコミット固定(タグv1.3.0)で自動取得する
-  - `examples/ButtonDrum` の構成(ボタン入力→SDSinkでWAV再生)をブロック化。
-    「ゆる楽器を鳴らす(音色: ピアノ/サックス)」ブロック1つ(SDSinkの初期化・毎ループの`update()`を隠す)と、
-    「ボタン(ピン)を押している間、音(2オクターブ分のドレミファソラシ)を鳴らす」ブロックの組み合わせ
+  - `examples/ButtonDrum` の構成(ボタン入力→SDSinkでWAV再生)を参考にブロック化。
+    「ゆる楽器を鳴らす(音色: ピアノ/サックス)」(SDSinkの初期化・毎ループの`update()`を隠す)、
+    「〜の音を鳴らす」(2オクターブ分のドレミファソラシ)、「音の長さを〜ミリ秒にする」の3ブロック
+  - **設計変更(2026-10-01)**: 当初はボタン検知も1つのブロックに含めていたが、ピンの状態を見る
+    機能はcore-ioの「デジタルピンがONになっている」+「もし〜なら」で既にできるため、
+    「ゆる楽器」パックは音を鳴らすことだけに専念する設計に変更した。「音を鳴らす」ブロックは
+    呼ばれるたびに「今鳴っていなければ鳴らす」引き金として働き、設定した長さが経過すると
+    (ブロックが再度呼ばれなくても)`spresense_instrument_setup`が毎ループ行う経過時間チェックで
+    自動的に音を止める。詳しくは `packages/block-packs/instrument/src/generators.ts` のコメントを参照
   - ssprocLibのexample自体が使っている`Button`ヘルパークラス(チャタリング防止)は、SketchBuilderの
-    出力順(クラス定義が常にグローバル変数より後に出る)と相性が悪いため採用せず、同じロジックを
-    グローバル変数+if文でインライン展開している(詳しくは
-    [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)
+    出力順(クラス定義が常にグローバル変数より後に出る)と相性が悪いため採用していない
+    (詳しくは [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)
   - 実機相当の自動セットアップ環境で、ssprocLib自体のコンパイル成功を確認済み(2026-09-29)
 - [x] 音源アセット(ピアノ・サックス、各2オクターブ)の同梱と「SDカード準備アシスタント」
   - 録音済み素材はライセンスが不明瞭になりがちなため使わず、

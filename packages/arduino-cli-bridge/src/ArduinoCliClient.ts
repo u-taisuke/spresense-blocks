@@ -12,13 +12,6 @@ export interface DetectedBoard {
   fqbn?: string;
 }
 
-export class ArduinoCliBusyError extends Error {
-  constructor() {
-    super("arduino-cli は既に別の処理を実行中です。完了を待ってから再試行してください。");
-    this.name = "ArduinoCliBusyError";
-  }
-}
-
 export class ArduinoCliExitError extends Error {
   constructor(
     public readonly command: string[],
@@ -54,12 +47,18 @@ const COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
  * arduino-cli サブプロセスの唯一の窓口。
  *
  * - Electron の main プロセスからのみ使う想定（レンダラーから直接子プロセスは起動しない）。
- * - 一度に1コマンドしか実行しない（ビルドキャッシュ破損防止のためのシングルフライト）。
+ * - 一度に1コマンドしか実行しない（ビルドキャッシュ破損防止のため）。ただし「既に実行中なら
+ *   即座に失敗させる」のではなく、キューに積んで前のコマンドが終わるのを待ってから実行する。
+ *   (以前は即座に ArduinoCliBusyError で失敗させていたが、バックグラウンドのポート自動検出
+ *   ポーリングと、ユーザーが押す「コンパイル & 書き込み」がたまたま同時に重なると
+ *   後者が無条件で失敗してしまう不具合があった。起動直後にSPRESENSEを挿した状態だと、
+ *   ポート自動検出のポーリングと最初のビルドが重なりやすく、再現性高く発生していた)
  * - stdout/stderr はイベントコールバックでストリーム通知する
  *   （SPRESENSEのビルドは数十秒かかりうるため、進捗をUIに出す必要がある）。
  */
 export class ArduinoCliClient {
-  private busy = false;
+  /** 直前にキューされたコマンドの完了を表す Promise。次のコマンドはこれに続けて実行する。 */
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly binaryPath: string = resolveArduinoCliPath(),
@@ -135,12 +134,21 @@ export class ArduinoCliClient {
     return parseInstalledLibraryNames(stdout);
   }
 
+  /**
+   * コマンドをキューに積む。前にキューされたコマンドが(成功・失敗どちらでも)終わってから、
+   * このコマンドを実行する。`queue` 自体は常に成功する Promise にしておく(catchで握りつぶす)
+   * ことで、1つのコマンドが失敗しても後続のコマンドが実行されなくなる事態を防いでいる。
+   */
   private run(args: string[], events: ArduinoCliEvents): Promise<void> {
-    if (this.busy) {
-      return Promise.reject(new ArduinoCliBusyError());
-    }
-    this.busy = true;
+    const task = this.queue.then(() => this.exec(args, events));
+    this.queue = task.then(
+      () => undefined,
+      () => undefined
+    );
+    return task;
+  }
 
+  private exec(args: string[], events: ArduinoCliEvents): Promise<void> {
     const fullArgs = this.configFilePath ? ["--config-file", this.configFilePath, ...args] : args;
 
     return new Promise((resolve, reject) => {
@@ -153,7 +161,6 @@ export class ArduinoCliClient {
           return;
         }
         settled = true;
-        this.busy = false;
         child.kill();
         reject(new ArduinoCliTimeoutError(args));
       }, this.commandTimeoutMs);
@@ -171,7 +178,6 @@ export class ArduinoCliClient {
         }
         settled = true;
         clearTimeout(timeoutId);
-        this.busy = false;
         reject(error);
       });
 
@@ -181,7 +187,6 @@ export class ArduinoCliClient {
         }
         settled = true;
         clearTimeout(timeoutId);
-        this.busy = false;
         if (exitCode === 0) {
           resolve();
         } else {

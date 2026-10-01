@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  ArduinoCliBusyError,
   ArduinoCliClient,
+  ArduinoCliExitError,
   parseBoardList,
   parseInstalledCoreVersion,
   parseInstalledLibraryNames,
@@ -87,18 +87,37 @@ describe("parseInstalledLibraryNames", () => {
   });
 });
 
-describe("ArduinoCliClient single-flight guard", () => {
-  it("rejects a second call while one is still running", async () => {
-    // 実際の arduino-cli の代わりに、少し待ってから終了するだけの Node スクリプトを叩く。
+describe("ArduinoCliClient コマンドキュー", () => {
+  it("同時に呼んでも両方が(即座にbusyで落とされず)実際に実行される", async () => {
+    // 実際の arduino-cli の代わりに node 自身を叩く(fullArgsの先頭が実在しないモジュール名
+    // "compile"/"upload" になるため、どちらも ArduinoCliExitError で失敗するが、
+    // ここで確認したいのは「2つ目の呼び出しが ArduinoCliBusyError 等で即座に拒否されず、
+    // 1つ目の完了を待ってから実際にプロセスが起動すること」。
     const client = new ArduinoCliClient(process.execPath);
-    const first = client.compile("-e", "SPRESENSE:spresense:spresense").catch(() => {
-      // 実引数はダミーなので失敗するが、ここでは「busyにならず受理されたこと」だけ確認できればよい。
-    });
 
-    await expect(client.upload("-e", "SPRESENSE:spresense:spresense", "COM3")).rejects.toBeInstanceOf(
-      ArduinoCliBusyError
-    );
+    const [firstResult, secondResult] = await Promise.allSettled([
+      client.compile("sketchDirA", "SPRESENSE:spresense:spresense"),
+      client.upload("sketchDirB", "SPRESENSE:spresense:spresense", "COM3"),
+    ]);
 
-    await first;
+    expect(firstResult.status).toBe("rejected");
+    expect(secondResult.status).toBe("rejected");
+    if (firstResult.status === "rejected") {
+      expect(firstResult.reason).toBeInstanceOf(ArduinoCliExitError);
+    }
+    if (secondResult.status === "rejected") {
+      expect(secondResult.reason).toBeInstanceOf(ArduinoCliExitError);
+    }
+  });
+
+  it("1つ目が失敗しても、2つ目はキューされたまま実行される", async () => {
+    const client = new ArduinoCliClient(process.execPath);
+
+    const first = client.compile("sketchDirA", "SPRESENSE:spresense:spresense").catch((e) => e);
+    const second = client.compile("sketchDirB", "SPRESENSE:spresense:spresense").catch((e) => e);
+
+    const [firstError, secondError] = await Promise.all([first, second]);
+    expect(firstError).toBeInstanceOf(ArduinoCliExitError);
+    expect(secondError).toBeInstanceOf(ArduinoCliExitError);
   });
 });
