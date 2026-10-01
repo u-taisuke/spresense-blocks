@@ -1,9 +1,4 @@
-export {
-  ArduinoCliClient,
-  ArduinoCliBusyError,
-  ArduinoCliExitError,
-  ArduinoCliTimeoutError,
-} from "./ArduinoCliClient.js";
+export { ArduinoCliClient, ArduinoCliExitError, ArduinoCliTimeoutError } from "./ArduinoCliClient.js";
 export {
   parseBoardList,
   parseInstalledCoreVersion,

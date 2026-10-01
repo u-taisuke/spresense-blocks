@@ -1,5 +1,4 @@
 import * as Blockly from "blockly/core";
-import { pins } from "@spresense-blocks/board-spresense";
 import { BlockCategoryColour } from "@spresense-blocks/block-shared";
 import ja from "./locales/ja.json" with { type: "json" };
 
@@ -7,8 +6,6 @@ import ja from "./locales/ja.json" with { type: "json" };
 export function installMessages(): void {
   Object.assign(Blockly.Msg, ja);
 }
-
-const DIGITAL_PIN_OPTIONS: Blockly.MenuOption[] = pins.digitalPins.map((p) => [p.label, p.id]);
 
 /**
  * アプリに同梱されている音色(音源フォルダ名)。
@@ -21,7 +18,7 @@ const VOICE_OPTIONS: Blockly.MenuOption[] = [
 ];
 
 /**
- * ボタン楽器で使うノート番号(MIDIノート番号)。C3(48)〜B4(71)の2オクターブ分、
+ * 鳴らせるノート番号(MIDIノート番号)。C3(48)〜B4(71)の2オクターブ分、
  * 全音音階(ダイアトニックスケール、シャープ抜き)のみをドロップダウンで選べるようにしている。
  * 同梱の音源WAV(packages/block-packs/instrument/tools/generate-sound-assets.py で生成)も
  * ちょうどこの14音分しか用意していないので、generators.ts の NOTE_TABLE と必ず一致させること。
@@ -56,16 +53,24 @@ export function installBlocks(): void {
       tooltip: "%{BKY_SPRESENSE_INSTRUMENT_SETUP_TOOLTIP}",
     },
     {
-      type: "spresense_instrument_button",
-      message0: "%{BKY_SPRESENSE_INSTRUMENT_BUTTON}",
-      args0: [
-        { type: "field_dropdown", name: "PIN", options: DIGITAL_PIN_OPTIONS },
-        { type: "field_dropdown", name: "NOTE", options: NOTE_OPTIONS },
-      ],
+      // ボタンの状態そのものは扱わない(センシングカテゴリの「デジタルピンがONになっている」+
+      // 「もし〜なら」と組み合わせて使ってもらう想定)。このブロックは「音を鳴らす」ことだけに専念する。
+      type: "spresense_instrument_play_note",
+      message0: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_NOTE}",
+      args0: [{ type: "field_dropdown", name: "NOTE", options: NOTE_OPTIONS }],
       previousStatement: null,
       nextStatement: null,
       colour: BlockCategoryColour.SOUND,
-      tooltip: "%{BKY_SPRESENSE_INSTRUMENT_BUTTON_TOOLTIP}",
+      tooltip: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP}",
+    },
+    {
+      type: "spresense_instrument_set_duration",
+      message0: "%{BKY_SPRESENSE_INSTRUMENT_SET_DURATION}",
+      args0: [{ type: "field_number", name: "DURATION_MS", value: 300, min: 0, precision: 1 }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: BlockCategoryColour.SOUND,
+      tooltip: "%{BKY_SPRESENSE_INSTRUMENT_SET_DURATION_TOOLTIP}",
     },
   ]);
 }

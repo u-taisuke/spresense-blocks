@@ -24,6 +24,9 @@ const NOTE_TABLE: Record<number, string> = {
   71: "71_B4",
 };
 
+/** 「音の長さを設定する」ブロックが無い場合に使う既定値(ミリ秒)。 */
+const DEFAULT_NOTE_DURATION_MS = 300;
+
 /**
  * instrument パック(Sony公式 ssprocLib を使った「ゆる楽器」)のブロック用コード生成関数を、
  * 渡された Blockly.Generator に登録する。
@@ -33,11 +36,18 @@ const NOTE_TABLE: Record<number, string> = {
  * このパックはここで自分の `forBlock` を登録するだけで、
  * `Blockly.Generator` 自体の生成や `scrub_` の設定は呼び出し側(アプリ)の責任にする。
  *
- * ssprocLib の example(ButtonDrum.ino)にある Button クラス(ボタンのチャタリング防止)は
- * ライブラリ本体ではなく example 側の自作ヘルパーなので、そのまま移植すると
- * 「グローバル変数の初期化でクラスを使うが、クラス定義は SketchBuilder の最後尾(functions)に
- * 出力される」という順序問題が起きる。ここでは Button クラスを使わず、同じロジック(2回連続で
- * 同じ状態を読めたら確定させる)をボタンごとの真偽値グローバル変数だけでインライン展開している。
+ * **設計メモ(ボタン入力を自前で持たない理由)**: 以前は「ボタン(ピン)を押している間〜音を鳴らす」
+ * という、ボタン検知と音を1つのブロックにまとめていたが、ピンの状態を調べる機能は
+ * core-io パックの「デジタルピンがONになっている」+「もし〜なら」で既にできるため、
+ * このパックは「音を鳴らす」ことだけに専念する設計に変更した。そのため、「音を鳴らす」ブロックは
+ * ボタンの押しっぱなし(レベル)検知ではなく、呼ばれるたびに「今鳴っていなければ鳴らす」
+ * (`spresenseNoteStopAt[note]` が0=鳴っていない、を見て判定)という単純な引き金として働く。
+ * 鳴らした音は `spresenseNoteDurationMs`(既定値またはユーザーが設定した値)が経過すると
+ * 自動的に止まる。この「経過時間チェック」は `spresense_instrument_setup` ブロックが毎ループ
+ * 無条件で実行するコード(`spresenseInstrument.update()`と同じ場所)に組み込んである。
+ * こうすることで、「音を鳴らす」ブロックが(ボタンが離されて)呼ばれなくなった後でも、
+ * 設定した長さぴったりで音を止められる(呼ばれたときだけ判定するのでは、ボタンを離した
+ * タイミングでしか止められない)。
  */
 export function registerGenerators(generator: Blockly.Generator, builder: SketchBuilder): void {
   generator.forBlock["spresense_instrument_setup"] = (block: Blockly.Block) => {
@@ -59,6 +69,7 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
       "instrument-instance",
       `SDSink spresenseInstrument(spresenseInstrumentTable, ${noteCount});`
     );
+    builder.addGlobal("instrument-note-stop-at", "unsigned long spresenseNoteStopAt[128] = {0};");
 
     builder.addSetup("serial-begin", "Serial.begin(115200);");
     builder.addSetup(
@@ -69,36 +80,49 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
     );
 
     // SDSink::update() は音を鳴らし続けるために毎ループ呼ぶ必要がある(examplesのloop()と同じ)。
-    return "spresenseInstrument.update();\n";
-  };
-
-  generator.forBlock["spresense_instrument_button"] = (block: Blockly.Block) => {
-    const pin = block.getFieldValue("PIN") as string;
-    const note = block.getFieldValue("NOTE") as string;
-
-    builder.addInclude("<SDSink.h>");
-    builder.addGlobal(`instrument-button-state:${pin}`, `int spresenseButton${pin}PrevStat = HIGH;`);
-    builder.addSetup(`pinMode:${pin}`, `pinMode(${pin}, INPUT_PULLUP);`);
-
-    // examples/ButtonDrum の Button::hasChanged()/isPressed() と同じロジック
-    // (チャタリング防止のため、状態が変わって10マイクロ秒後にもう一度読み直して確定させる)を、
-    // クラスを使わずインライン展開したもの。
+    // 続けて、設定した長さ(spresenseNoteStopAt)を過ぎた音を止める処理も毎ループ行う
+    // (「音を鳴らす」ブロックが呼ばれるかどうかに関係なく、時間になったら自動で止めるため)。
     return (
-      "{\n" +
-      `    int buttonNow = digitalRead(${pin});\n` +
-      `    if (spresenseButton${pin}PrevStat != buttonNow) {\n` +
-      "      delayMicroseconds(10);\n" +
-      `      if (buttonNow == digitalRead(${pin})) {\n` +
-      `        spresenseButton${pin}PrevStat = buttonNow;\n` +
-      "        if (buttonNow == LOW) {\n" +
-      `          spresenseInstrument.sendNoteOn(${note}, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n` +
-      "        } else {\n" +
-      `          spresenseInstrument.sendNoteOff(${note}, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n` +
-      "        }\n" +
-      "      }\n" +
+      "spresenseInstrument.update();\n" +
+      "for (int i = 0; i < 128; i++) {\n" +
+      "    if (spresenseNoteStopAt[i] != 0 && millis() >= spresenseNoteStopAt[i]) {\n" +
+      "      spresenseInstrument.sendNoteOff(i, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n" +
+      "      spresenseNoteStopAt[i] = 0;\n" +
       "    }\n" +
       "  }\n"
     );
+  };
+
+  generator.forBlock["spresense_instrument_play_note"] = (block: Blockly.Block) => {
+    const note = block.getFieldValue("NOTE") as string;
+
+    builder.addInclude("<SDSink.h>");
+    builder.addGlobal("instrument-note-stop-at", "unsigned long spresenseNoteStopAt[128] = {0};");
+    builder.addGlobal(
+      "instrument-note-duration",
+      `unsigned long spresenseNoteDurationMs = ${DEFAULT_NOTE_DURATION_MS};`
+    );
+
+    // 既に鳴っている音は、自然に止まる(spresenseNoteStopAt[note]が0に戻る)まで鳴らし直さない。
+    // これにより、「もし(ボタンが押されている)なら 音を鳴らす」のように毎ループ呼ばれても、
+    // ブツブツと音が途切れず、設定した長さぶん自然に鳴り続ける。
+    return (
+      `if (spresenseNoteStopAt[${note}] == 0) {\n` +
+      `    spresenseInstrument.sendNoteOn(${note}, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n` +
+      `    spresenseNoteStopAt[${note}] = millis() + spresenseNoteDurationMs;\n` +
+      "  }\n"
+    );
+  };
+
+  generator.forBlock["spresense_instrument_set_duration"] = (block: Blockly.Block) => {
+    const durationMs = Math.max(0, Math.floor(Number(block.getFieldValue("DURATION_MS"))));
+
+    builder.addGlobal(
+      "instrument-note-duration",
+      `unsigned long spresenseNoteDurationMs = ${DEFAULT_NOTE_DURATION_MS};`
+    );
+
+    return `spresenseNoteDurationMs = ${durationMs};\n`;
   };
 }
 

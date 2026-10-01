@@ -10,8 +10,9 @@ import { PROJECT_SCHEMA_VERSION, type ProjectFile } from "./project";
 
 // SPRESENSEを後から挿したときの自動検出のためのポーリング間隔。
 // `arduino-cli board list` 自体が数秒かかるため、固定間隔のsetIntervalではなく
-// 「前回の完了を待ってから次を予約する」方式にし、二重実行による
-// ArduinoCliBusyError の連発を避ける。
+// 「前回の完了を待ってから次を予約する」方式にし、無駄な二重実行を避ける。
+// なお、このポーリングとユーザーの「コンパイル & 書き込み」がたまたま重なっても、
+// ArduinoCliClient側がコマンドをキューするため失敗はしない(片方がもう片方の完了を待つだけ)。
 const PORT_WATCH_INTERVAL_MS = 2000;
 
 const USB_DRIVER_HELP_URL = "https://developer.sony.com/develop/spresense/";
