@@ -68,5 +68,20 @@ export function installBlocks(): void {
       colour: BlockCategoryColour.SOUND,
       tooltip: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP}",
     },
+    {
+      // 和音(とりあえず2音)。単音ブロックと同じく高さ・長さ・大きさを1ブロックにまとめている。
+      type: "spresense_instrument_play_chord",
+      message0: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_CHORD}",
+      args0: [
+        { type: "field_dropdown", name: "NOTE1", options: NOTE_OPTIONS },
+        { type: "field_dropdown", name: "NOTE2", options: NOTE_OPTIONS },
+        { type: "field_number", name: "DURATION_MS", value: 300, min: 0, precision: 1 },
+        { type: "field_number", name: "VOLUME", value: 100, min: 0, max: 100, precision: 1 },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: BlockCategoryColour.SOUND,
+      tooltip: "%{BKY_SPRESENSE_INSTRUMENT_PLAY_CHORD_TOOLTIP}",
+    },
   ]);
 }

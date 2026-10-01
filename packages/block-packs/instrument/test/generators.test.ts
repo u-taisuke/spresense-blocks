@@ -76,6 +76,27 @@ describe("instrument generators", () => {
     expect(code).toContain("spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, -1020);");
   });
 
+  it("play_chord block only triggers when both notes are free, and starts both together", () => {
+    const workspace = new Blockly.Workspace();
+    const { generator, builder } = createGeneratorAndBuilder();
+    const block = workspace.newBlock("spresense_instrument_play_chord");
+    block.setFieldValue("60", "NOTE1");
+    block.setFieldValue("64", "NOTE2");
+    block.setFieldValue(400, "DURATION_MS");
+    block.setFieldValue(80, "VOLUME");
+
+    const code = generator.forBlock["spresense_instrument_play_chord"](block, generator) as string;
+
+    expect(code).toContain("if (spresenseNoteStopAt[60] == 0 && spresenseNoteStopAt[64] == 0) {");
+    expect(code).toContain("spresenseInstrument.setParam(Filter::PARAMID_OUTPUT_LEVEL, -204);");
+    expect(code).toContain("spresenseInstrument.sendNoteOn(60, DEFAULT_VELOCITY, DEFAULT_CHANNEL);");
+    expect(code).toContain("spresenseNoteStopAt[60] = millis() + 400;");
+    expect(code).toContain("spresenseInstrument.sendNoteOn(64, DEFAULT_VELOCITY, DEFAULT_CHANNEL);");
+    expect(code).toContain("spresenseNoteStopAt[64] = millis() + 400;");
+
+    expect(builder.build()).toContain("unsigned long spresenseNoteStopAt[128] = {0};");
+  });
+
   it("works together with core-io's digital-read + if blocks for button sensing", async () => {
     // このパックはボタン自体を扱わない設計なので、core-io の「デジタルピンがONになっている」+
     // 「もし〜なら」と組み合わせて使うのが想定の使い方。実際に組み合わせて壊れないことを確認する。
