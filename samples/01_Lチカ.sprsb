@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_onboard_led_set",
+                "id": "led_on",
+                "fields": { "LED": "LED0", "STATE": "HIGH" },
+                "next": {
+                  "block": {
+                    "type": "spresense_wait_ms",
+                    "id": "wait1",
+                    "fields": { "MS": 500 },
+                    "next": {
+                      "block": {
+                        "type": "spresense_onboard_led_set",
+                        "id": "led_off",
+                        "fields": { "LED": "LED0", "STATE": "LOW" },
+                        "next": {
+                          "block": {
+                            "type": "spresense_wait_ms",
+                            "id": "wait2",
+                            "fields": { "MS": 500 }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

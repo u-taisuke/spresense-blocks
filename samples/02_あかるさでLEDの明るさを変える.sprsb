@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_pwm_write",
+                "id": "pwm1",
+                "fields": { "PIN": "PIN_D05" },
+                "inputs": {
+                  "VALUE": {
+                    "block": {
+                      "type": "spresense_analog_read",
+                      "id": "ar1",
+                      "fields": { "PIN": "A0" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
