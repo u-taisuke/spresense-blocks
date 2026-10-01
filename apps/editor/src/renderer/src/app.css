@@ -151,18 +151,23 @@ body,
   font-size: 0.85rem;
 }
 
-/* 開発用の非表示コードビュー(Ctrl+Shift+Cで切りかえ)。内部QA専用、生徒には見せない想定。 */
+/* 生成されたC++コードを表示するパネル(ツールバーの「コードを見る」/Ctrl+Shift+Cで切りかえ)。
+   シンタックスハイライトの配色は highlight.js の atom-one-dark テーマ(CodeView.tsx)に合わせてある。 */
 .code-view {
   flex: 1;
   margin: 0;
-  padding: 12px;
-  background: #0d1b2e;
-  color: #9fd1ff;
+  padding: 0;
+  background: #282c34;
   overflow-y: auto;
   white-space: pre-wrap;
   font-family: "Consolas", monospace;
   font-size: 0.8rem;
-  border-left: 2px dashed #e07a2c;
+  border-left: 2px solid #4a6cd4;
+}
+
+.code-view code.hljs {
+  display: block;
+  padding: 12px;
 }
 
 .setup-screen {

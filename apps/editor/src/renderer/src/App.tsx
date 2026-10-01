@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from "./BlocklyWorkspace";
+import { CodeView } from "./CodeView";
 import { PortSelect } from "./PortSelect";
 import { SdCardPanel } from "./SdCardPanel";
 import { SetupScreen } from "./SetupScreen";
@@ -81,8 +82,7 @@ function Editor(): React.JSX.Element {
     });
   }, []);
 
-  // 生成されたC++コードを見るための非表示パネル。生徒向けには出さない(Phase 5で正式機能化予定)
-  // 内部QA専用の裏技なので、ツールバーにボタンは置かず、ショートカットキーだけで切りかえる。
+  // 生成されたC++コードを見るパネル。ツールバーのボタンに加えて、Ctrl+Shift+Cでも切りかえられる。
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "c") {
@@ -249,6 +249,9 @@ function Editor(): React.JSX.Element {
         <button type="button" onClick={() => setSdCardPanelOpen(true)}>
           SDカードに音源をコピー
         </button>
+        <button type="button" onClick={() => setShowCodeView((prev) => !prev)}>
+          {showCodeView ? "コードを隠す" : "コードを見る"}
+        </button>
         <button
           type="button"
           className="help-link"
@@ -259,7 +262,7 @@ function Editor(): React.JSX.Element {
       </header>
       <main className="main">
         <BlocklyWorkspace ref={blocklyRef} onCodeChange={setCode} />
-        {showCodeView && <pre className="code-view">{code}</pre>}
+        {showCodeView && <CodeView code={code} />}
         <pre className="log">{log || "ここにビルドログが表示されます。"}</pre>
       </main>
       {sdCardPanelOpen && <SdCardPanel onClose={() => setSdCardPanelOpen(false)} />}

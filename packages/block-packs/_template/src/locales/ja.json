@@ -1,0 +1,7 @@
+{
+  "SPRESENSE_TEMPLATE_ACTION": "テンプレート: ピン %1 を %2 にする",
+  "SPRESENSE_TEMPLATE_ACTION_TOOLTIP": "これはテンプレートの説明文です。このブロックが実際に何をするか、どんなハードウェアが必要かをここに書きます。",
+
+  "SPRESENSE_TEMPLATE_VALUE": "テンプレート: ピン %1 の値",
+  "SPRESENSE_TEMPLATE_VALUE_TOOLTIP": "これもテンプレートの説明文です。値を返すブロック(output付き)の例です。"
+}

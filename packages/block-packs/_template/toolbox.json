@@ -1,0 +1,11 @@
+[
+  {
+    "kind": "category",
+    "name": "テンプレート",
+    "colour": "#4C97FF",
+    "contents": [
+      { "kind": "block", "type": "spresense_template_action" },
+      { "kind": "block", "type": "spresense_template_value" }
+    ]
+  }
+]

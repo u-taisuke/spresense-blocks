@@ -5,6 +5,10 @@
 
 ## 1. パッケージを作る
 
+[packages/block-packs/\_template](../packages/block-packs/_template) をコピーして
+リネームするのが一番早い(ひな形になっている。詳しくは`_template/README.md`を参照)。
+手で一から作る場合は、次の構成にする。
+
 ```
 packages/block-packs/<パック名>/
   package.json
