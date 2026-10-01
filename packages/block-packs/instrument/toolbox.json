@@ -1,0 +1,11 @@
+[
+  {
+    "kind": "category",
+    "name": "ゆる楽器",
+    "colour": "#CF63CF",
+    "contents": [
+      { "kind": "block", "type": "spresense_instrument_setup" },
+      { "kind": "block", "type": "spresense_instrument_button" }
+    ]
+  }
+]

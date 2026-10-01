@@ -13,6 +13,15 @@ export interface OpenProjectResult {
 
 export type SetupRunResult = { ok: true } | { ok: false; error: string };
 
+export interface RemovableDrive {
+  driveLetter: string;
+  volumeName: string;
+  totalBytes: number;
+  freeBytes: number;
+}
+
+export type CopyVoicesResult = { ok: true; copiedVoices: string[] } | { ok: false; error: string };
+
 export interface SpresenseApi {
   listBoards(): Promise<DetectedBoard[]>;
   compileAndUpload(code: string, port: string): Promise<void>;
@@ -26,6 +35,12 @@ export interface SpresenseApi {
   onSetupProgress(callback: (event: InstallProgressEvent) => void): () => void;
   /** USBドライバのダウンロードページ等、外部URLを既定のブラウザで開く。 */
   openExternal(url: string): void;
+  /** アプリに同梱されている(=SDカードにコピー可能な)音色フォルダ名の一覧。 */
+  listAvailableVoices(): Promise<string[]>;
+  /** リムーバブルディスク(SDカードリーダー等)の一覧。Windows以外では常に空配列。 */
+  listRemovableDrives(): Promise<RemovableDrive[]>;
+  /** 選んだ音色フォルダを丸ごと、指定したドライブのルート直下にコピーする。 */
+  copyVoicesToDrive(driveLetter: string, voices: string[]): Promise<CopyVoicesResult>;
 }
 
 const api: SpresenseApi = {
@@ -51,6 +66,10 @@ const api: SpresenseApi = {
       shell.openExternal(url);
     }
   },
+  listAvailableVoices: () => ipcRenderer.invoke("sdcard:listVoices"),
+  listRemovableDrives: () => ipcRenderer.invoke("sdcard:listDrives"),
+  copyVoicesToDrive: (driveLetter, voices) =>
+    ipcRenderer.invoke("sdcard:copyVoices", { driveLetter, voices }),
 };
 
 contextBridge.exposeInMainWorld("spresense", api);

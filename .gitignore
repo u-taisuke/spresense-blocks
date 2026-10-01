@@ -5,10 +5,15 @@ release/
 *.log
 .DS_Store
 Thumbs.db
-.claude/
+.claude/*
+!.claude/skills/
 .vscode/
+.tmp-shots/
 *.tsbuildinfo
 .vite/
 
 # 開発機ごとにダウンロードする arduino-cli 本体(大きいバイナリなのでコミットしない)
 tools/arduino-cli/
+
+# CIがブロックから生成するサンプルスケッチ(generate:ci-samples の出力。都度再生成するのでコミットしない)
+ci-samples/

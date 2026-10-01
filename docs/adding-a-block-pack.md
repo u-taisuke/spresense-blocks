@@ -58,6 +58,13 @@ packages/block-packs/<パック名>/
 - 複数ステートメントを連結するブロック(繰り返しブロックなど)を作る場合は、
   [architecture.md](./architecture.md) の `scrub_` の節を必ず読むこと
   (Blockly の既定動作では次ブロックへの連結が自動で行われない)。
+- **C++のクラス定義を生成コードに含めたい場合、`builder.addFunction()` は使わないこと。**
+  `SketchBuilder.build()` の出力順は include → グローバル変数 → setup/loop → 関数(`addFunction`)の順で
+  固定されており、`addFunction` の内容は常に一番最後に出力される。そのためグローバル変数の初期化
+  (`SomeClass instance;` のような行)でそのクラスを使うと、クラス定義より前に使われてコンパイルエラーに
+  なる。クラスがどうしても必要な初期化(チャタリング防止のあるボタン入力など)は、instrumentパック
+  (`packages/block-packs/instrument`)のように、状態を持つグローバル変数(`int`など)と `if` 文だけで
+  同じロジックをインライン展開することで回避できる。
 - パック単体でのテスト・動作確認用に、`registerGenerators` を呼び出して単体で完結する
   `generateSketch(workspace, builder)` も一緒に export しておくとよい(既存パックを参照)。
   値ブロックしか持たないパック(sensor-addonなど)は、テストでは `generator.forBlock[type]` を
@@ -76,10 +83,12 @@ TypeScriptの定数を直接参照できないため、手で合わせる必要�
 1行呼ぶ。どちらも既存パックの登録行をコピーすればよい。
 
 もしパックが Arduino Library Manager や GitHub 上のライブラリ(BMI160Gen など)を必要とするなら、
-`packages/board-spresense` に `LibraryDependency` の配列としてデータを足し、
-`apps/editor/src/main/setup.ts` の `REQUIRED_LIBRARIES` に追加する(初回起動時に自動インストール
-されるようになる)。git-url でのインストールは必ずコミットハッシュを固定すること
-(`packages/board-spresense/sensorAddon.json` を参照)。
+`packages/board-spresense` に `LibraryDependency` の配列としてデータを足し(`sensorAddon.json`
+のような専用JSONを新設し)、`packages/board-spresense/src/index.ts` の `allBlockPackLibraries`
+にスプレッドで加える。これ1箇所の更新だけで、アプリ本体の自動セットアップ
+(`apps/editor/src/main/setup.ts`)とCI(`scripts/ci-install-arduino-deps.mjs`)の両方に反映される。
+git-url でのインストールは必ずコミットハッシュを固定すること(`packages/board-spresense/sensorAddon.json`
+を参照)。
 
 ## 5. テストを書く
 
@@ -94,3 +103,18 @@ Blockly はヘッドレスの `new Blockly.Workspace()` + `Blockly.serialization
 実際に `arduino-cli compile --fqbn SPRESENSE:spresense:spresense` に通して
 コンパイルが通ることを確認してから統合すること。特にSDカードに追加ファイルが必要な機能
 (音声デコーダ等)は、コンパイルが通っても実機で動かない罠があるので注意。
+
+## 7. CIサンプルに追加する(推奨)
+
+`apps/editor/test/generate-ci-samples.test.ts` の `SAMPLES` に、新しいパックを使った
+代表的なブロック構成を1つ追加しておくと、CI(`.github/workflows/ci.yml`)が毎回
+実際に `arduino-cli compile` でコンパイル確認してくれるようになる。アプリ本体と同じ
+`codegen.ts` 経由で生成するため、パック単体のテストでは気づけない「他パックとの合成で
+壊れる」類の回帰も検知できる。
+
+## 8. UIを目で確認する(新しいツールバーボタンやパネルを追加した場合)
+
+`.claude/skills/run-desktop/` に、Playwrightの `_electron` でこのElectronアプリを
+実際に起動・操作するためのドライバーとその使い方をまとめてある。ツールボックスの
+フライアウト内のブロック操作は合成イベントでは不安定なため避け、ボタン・モーダル・
+フォームなどトップレベルのUI要素の動作確認に使うこと。

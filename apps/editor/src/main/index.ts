@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron";
 import { join } from "node:path";
 import { registerArduinoIpc } from "./ipc/arduino.js";
 import { registerProjectIpc } from "./ipc/project.js";
+import { registerSdCardIpc } from "./ipc/sdcard.js";
 import { SetupManager, registerSetupIpc } from "./setup.js";
 
 // package.json の "name" が "@spresense-blocks/editor" (npm workspace用のスコープ付き名前)なので、
@@ -47,6 +48,7 @@ app.whenReady().then(() => {
   registerSetupIpc(() => mainWindow, setupManager);
   registerArduinoIpc(() => mainWindow, setupManager.createArduinoCliClient());
   registerProjectIpc(() => mainWindow);
+  registerSdCardIpc();
   createWindow();
 
   app.on("activate", () => {

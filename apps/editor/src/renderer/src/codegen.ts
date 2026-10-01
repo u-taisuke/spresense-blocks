@@ -2,6 +2,7 @@ import * as Blockly from "blockly/core";
 import { SketchBuilder } from "@spresense-blocks/codegen-core";
 import { registerGenerators as registerCoreIoGenerators } from "@spresense-blocks/block-pack-core-io";
 import { registerGenerators as registerSensorAddonGenerators } from "@spresense-blocks/block-pack-sensor-addon";
+import { registerGenerators as registerInstrumentGenerators } from "@spresense-blocks/block-pack-instrument";
 
 /**
  * アプリ全体で使う唯一の Blockly.Generator を組み立てる。
@@ -29,6 +30,7 @@ function createGenerator(builder: SketchBuilder): Blockly.Generator {
 
   registerCoreIoGenerators(generator, builder);
   registerSensorAddonGenerators(generator, builder);
+  registerInstrumentGenerators(generator, builder);
 
   return generator;
 }

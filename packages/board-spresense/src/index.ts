@@ -1,6 +1,7 @@
 import boardJson from "../board.json" with { type: "json" };
 import pinsJson from "../pins.json" with { type: "json" };
 import sensorAddonJson from "../sensorAddon.json" with { type: "json" };
+import instrumentAddonJson from "../instrumentAddon.json" with { type: "json" };
 
 export interface BoardDefinition {
   id: string;
@@ -51,6 +52,15 @@ export interface LibraryDependency {
 }
 
 export const sensorAddonLibraries: LibraryDependency[] = sensorAddonJson.libraries;
+export const instrumentAddonLibraries: LibraryDependency[] = instrumentAddonJson.libraries;
+
+/**
+ * 現時点で何らかのブロックパックが必要とする追加ライブラリの全量。
+ * `apps/editor/src/main/setup.ts`(初回セットアップ時の自動インストール)と
+ * CI(`scripts/ci-install-arduino-deps.mjs`)の両方がここを見るため、
+ * 新しいブロックパックが追加ライブラリを必要とするようになったら、ここに追記するだけでよい。
+ */
+export const allBlockPackLibraries: LibraryDependency[] = [...sensorAddonLibraries, ...instrumentAddonLibraries];
 
 /** `arduino-cli core install` に渡す、バージョン固定済みのターゲット文字列。 */
 export const boardCoreInstallTarget = `${board.coreId}@${board.coreVersion}`;
