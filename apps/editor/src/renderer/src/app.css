@@ -151,6 +151,20 @@ body,
   font-size: 0.85rem;
 }
 
+/* 開発用の非表示コードビュー(Ctrl+Shift+Cで切りかえ)。内部QA専用、生徒には見せない想定。 */
+.code-view {
+  flex: 1;
+  margin: 0;
+  padding: 12px;
+  background: #0d1b2e;
+  color: #9fd1ff;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: "Consolas", monospace;
+  font-size: 0.8rem;
+  border-left: 2px dashed #e07a2c;
+}
+
 .setup-screen {
   display: flex;
   align-items: center;

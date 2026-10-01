@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_instrument_setup",
+                "id": "setup1",
+                "fields": { "VOICE": "Piano" },
+                "next": {
+                  "block": {
+                    "type": "spresense_instrument_button",
+                    "id": "button1",
+                    "fields": { "PIN": "PIN_D04", "NOTE": "60" },
+                    "next": {
+                      "block": {
+                        "type": "spresense_instrument_button",
+                        "id": "button2",
+                        "fields": { "PIN": "PIN_D05", "NOTE": "62" },
+                        "next": {
+                          "block": {
+                            "type": "spresense_instrument_button",
+                            "id": "button3",
+                            "fields": { "PIN": "PIN_D06", "NOTE": "64" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

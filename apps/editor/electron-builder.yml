@@ -17,6 +17,13 @@ asarUnpack:
   - resources/**
 win:
   target: nsis
+# 管理者権限が無い学校PCでもインストールできるよう、常にユーザー単位(perMachine: false)で
+# インストールする。UAC昇格プロンプトを一切出さない("asInvoker"扱いになる)。
+# oneClickではなくインストール先を選べるウィザードにして、挙動が分かりやすいようにしている。
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
 mac:
   target: dmg
 linux:

@@ -60,6 +60,7 @@ function Editor(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [sdCardPanelOpen, setSdCardPanelOpen] = useState(false);
+  const [showCodeView, setShowCodeView] = useState(false);
   const blocklyRef = useRef<BlocklyWorkspaceHandle>(null);
   const busyRef = useRef(busy);
   const previousPortIdsRef = useRef<string[]>([]);
@@ -78,6 +79,19 @@ function Editor(): React.JSX.Element {
     return window.spresense.onLog((entry) => {
       setLog((prev) => prev + entry.chunk);
     });
+  }, []);
+
+  // 生成されたC++コードを見るための非表示パネル。生徒向けには出さない(Phase 5で正式機能化予定)
+  // 内部QA専用の裏技なので、ツールバーにボタンは置かず、ショートカットキーだけで切りかえる。
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        setShowCodeView((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const refreshPorts = useCallback((options?: { silent?: boolean }): Promise<void> => {
@@ -245,6 +259,7 @@ function Editor(): React.JSX.Element {
       </header>
       <main className="main">
         <BlocklyWorkspace ref={blocklyRef} onCodeChange={setCode} />
+        {showCodeView && <pre className="code-view">{code}</pre>}
         <pre className="log">{log || "ここにビルドログが表示されます。"}</pre>
       </main>
       {sdCardPanelOpen && <SdCardPanel onClose={() => setSdCardPanelOpen(false)} />}
