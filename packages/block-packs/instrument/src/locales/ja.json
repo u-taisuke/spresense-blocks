@@ -1,0 +1,25 @@
+{
+  "SPRESENSE_INSTRUMENT_SETUP": "ゆる楽器を鳴らす(音色: %1)",
+  "SPRESENSE_INSTRUMENT_SETUP_TOOLTIP": "SonyのssprocLib(Sound Signal Processing Library for Spresense)を使って「ゆる楽器」を準備します。選んだ音色の音源は、アプリにあらかじめ入っているものが自動でSDカードにコピーされます(ツールバーの「SDカードに音源をコピー」ボタンを使ってください)。この1つのブロックを「ずっと」の中の一番上に置き、その下にボタンのブロックを並べてください。",
+
+  "SPRESENSE_INSTRUMENT_VOICE_PIANO": "ピアノ",
+  "SPRESENSE_INSTRUMENT_VOICE_SAX": "サックス",
+
+  "SPRESENSE_INSTRUMENT_BUTTON": "ボタン(%1番ピン)を押している間「%2」の音を鳴らす",
+  "SPRESENSE_INSTRUMENT_BUTTON_TOOLTIP": "指定したピンにつないだボタンが押されている間、選んだ音の高さを鳴らします。ボタンのもう片方の足はGND(グラウンド)につないでください。「ゆる楽器を鳴らす」ブロックと組み合わせて、「ずっと」の中で使います。",
+
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_DO": "ひくい ド",
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_RE": "ひくい レ",
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_MI": "ひくい ミ",
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_FA": "ひくい ファ",
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_SO": "ひくい ソ",
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_LA": "ひくい ラ",
+  "SPRESENSE_INSTRUMENT_NOTE_LOW_SHI": "ひくい シ",
+  "SPRESENSE_INSTRUMENT_NOTE_DO": "ド",
+  "SPRESENSE_INSTRUMENT_NOTE_RE": "レ",
+  "SPRESENSE_INSTRUMENT_NOTE_MI": "ミ",
+  "SPRESENSE_INSTRUMENT_NOTE_FA": "ファ",
+  "SPRESENSE_INSTRUMENT_NOTE_SO": "ソ",
+  "SPRESENSE_INSTRUMENT_NOTE_LA": "ラ",
+  "SPRESENSE_INSTRUMENT_NOTE_SHI": "シ"
+}

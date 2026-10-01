@@ -11,11 +11,13 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "dist:win": "npm run build && electron-builder --win"
+    "dist:win": "npm run build && electron-builder --win",
+    "generate:ci-samples": "vitest run test/generate-ci-samples.test.ts"
   },
   "devDependencies": {
     "@spresense-blocks/arduino-cli-bridge": "*",
     "@spresense-blocks/block-pack-core-io": "*",
+    "@spresense-blocks/block-pack-instrument": "*",
     "@spresense-blocks/block-pack-sensor-addon": "*",
     "@spresense-blocks/board-spresense": "*",
     "@spresense-blocks/codegen-core": "*",
@@ -27,9 +29,12 @@
     "electron": "33.4.11",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
+    "jsdom": "^25.0.1",
+    "playwright-core": "^1.63.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.4"
   }
 }

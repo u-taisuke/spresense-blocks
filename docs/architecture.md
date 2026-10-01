@@ -46,8 +46,11 @@ SPRESENSE 実機
   Electronの `userData` 配下の専用ディレクトリに閉じ込め、ユーザーが元々持っている
   Arduino IDE 環境には一切触れない。ブロックパックが追加のライブラリを必要とする場合は
   `packages/board-spresense` に `LibraryDependency` として登録し、
-  `apps/editor/src/main/setup.ts` の `REQUIRED_LIBRARIES` に足す(詳しくは
-  [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)。
+  `packages/board-spresense` の `allBlockPackLibraries`(全パック分をまとめた単一の配列)に
+  足す(詳しくは [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)。
+  `apps/editor/src/main/setup.ts`(アプリ本体の自動セットアップ)と
+  `scripts/ci-install-arduino-deps.mjs`(CI)の両方がこの1つの配列だけを見るので、
+  新しいライブラリを追加するときの更新箇所が1箇所で済む。
 
 - **機能ごとに「ブロックパック」として分離してある。**
   詳しくは [adding-a-block-pack.md](./adding-a-block-pack.md) を参照。

@@ -11,6 +11,11 @@ import {
   installMessages as installSensorAddonMessages,
   toolbox as sensorAddonToolboxCategories,
 } from "@spresense-blocks/block-pack-sensor-addon";
+import {
+  installBlocks as installInstrumentBlocks,
+  installMessages as installInstrumentMessages,
+  toolbox as instrumentToolboxCategories,
+} from "@spresense-blocks/block-pack-instrument";
 import { SketchBuilder } from "@spresense-blocks/codegen-core";
 import { generateSketch } from "./codegen";
 
@@ -21,12 +26,14 @@ installCoreIoMessages();
 installCoreIoBlocks();
 installSensorAddonMessages();
 installSensorAddonBlocks();
+installInstrumentMessages();
+installInstrumentBlocks();
 
 // 各ブロックパックはツールボックス・カテゴリを(複数持つ場合もあるため)配列で提供する。
 // 新しいパックを追加するときは、ここに ...パック名Categories を足していく。
 const toolbox = {
   kind: "categoryToolbox",
-  contents: [...coreIoToolboxCategories, ...sensorAddonToolboxCategories],
+  contents: [...coreIoToolboxCategories, ...sensorAddonToolboxCategories, ...instrumentToolboxCategories],
 } as const;
 
 // generateSketch は毎回 builder.reset() してから組み立てるので、使い回して問題ない。

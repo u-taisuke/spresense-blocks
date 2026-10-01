@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    name: typecheck & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  compile-samples:
+    name: arduino-cli compile (sample projects)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Install arduino-cli
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+          arduino-cli version
+
+      - name: Install SPRESENSE core and block-pack libraries
+        run: node scripts/ci-install-arduino-deps.mjs
+
+      # ブロックで組んだ代表的な構成(core-io / sensor-addon / instrument)を
+      # 実際のアプリと同じ codegen.ts 経由で .ino に書き出す(ci-samples/配下、コミットはしない)。
+      - name: Generate sample sketches from blocks
+        run: npm run generate:ci-samples -w @spresense-blocks/editor
+
+      - name: Compile each sample
+        run: |
+          set -e
+          for dir in ci-samples/*/; do
+            name=$(basename "$dir")
+            echo "::group::compile $name"
+            arduino-cli compile --fqbn SPRESENSE:spresense:spresense "$dir"
+            echo "::endgroup::"
+          done

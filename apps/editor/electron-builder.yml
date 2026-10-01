@@ -5,8 +5,14 @@ directories:
   output: release
 files:
   - out/**/*
-# arduino-cli 等の実行バイナリを Phase 2 で resources に同梱する際は、
-# asar の外に展開されるよう asarUnpack の設定をここに追加すること。
+# 「ゆる楽器」パックの音源WAV(apps/editor/resources/instrument-sounds/)を
+# process.resourcesPath 配下にそのまま同梱する(asarには固めず、単純なファイルコピーとして展開する)。
+# apps/editor/src/main/sdcard.ts の resolveAssetsRoot() がパッケージ後にこの場所を参照する。
+extraResources:
+  - from: resources
+    to: resources
+# arduino-cli 等の実行バイナリを同梱する場合や、files 経由で resources を含める場合に備えて、
+# asar の外に展開されるよう asarUnpack の設定も残しておく(extraResources 自体は元々asarの外)。
 asarUnpack:
   - resources/**
 win:

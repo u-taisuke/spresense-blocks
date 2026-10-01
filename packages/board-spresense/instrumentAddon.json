@@ -1,0 +1,19 @@
+{
+  "_notes": [
+    "「ゆる楽器」開発向けのSony公式ライブラリ ssprocLib(Sound Signal Processing Library for Spresense)。",
+    "リポジトリ: https://github.com/SonySemiconductorSolutions/ssih-music",
+    "Arduino Library Managerには未登録(library_index.jsonを確認して非掲載を確認済み、2026-09-29)のため、",
+    "BMI160-Arduinoと同様にGitHubから直接取得する。タグ v1.3.0(=library.propertiesのversionと一致)の",
+    "コミットハッシュに固定している。",
+    "SPRESENSE:spresense:spresense での実コンパイル成功を確認済み(2026-09-29)。",
+    "音源ファイル(SDカードに配置するWAV/SFZ)はライブラリ本体には同梱されていないため、",
+    "実機での音出し確認にはユーザー自身が用意したSDカードが別途必要(docs/roadmap.mdのSDカード準備",
+    "アシスタントは未着手)。"
+  ],
+  "libraries": [
+    {
+      "name": "Sound Signal Processing Library for Spresense",
+      "gitUrl": "https://github.com/SonySemiconductorSolutions/ssih-music.git#12ac44649e0840e0050e9be5096db86d3e9d5fc6"
+    }
+  ]
+}

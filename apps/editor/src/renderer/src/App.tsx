@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from "./BlocklyWorkspace";
 import { PortSelect } from "./PortSelect";
+import { SdCardPanel } from "./SdCardPanel";
 import { SetupScreen } from "./SetupScreen";
 import type { DetectedBoard } from "@spresense-blocks/arduino-cli-bridge";
 import { board, isSpresenseDetectedBoard } from "@spresense-blocks/board-spresense";
@@ -58,6 +59,7 @@ function Editor(): React.JSX.Element {
   const [log, setLog] = useState("");
   const [busy, setBusy] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  const [sdCardPanelOpen, setSdCardPanelOpen] = useState(false);
   const blocklyRef = useRef<BlocklyWorkspaceHandle>(null);
   const busyRef = useRef(busy);
   const previousPortIdsRef = useRef<string[]>([]);
@@ -230,6 +232,9 @@ function Editor(): React.JSX.Element {
         <button type="button" className="primary" onClick={handleBuild} disabled={busy}>
           {busy ? "書き込み中..." : "コンパイル & 書き込み"}
         </button>
+        <button type="button" onClick={() => setSdCardPanelOpen(true)}>
+          SDカードに音源をコピー
+        </button>
         <button
           type="button"
           className="help-link"
@@ -242,6 +247,7 @@ function Editor(): React.JSX.Element {
         <BlocklyWorkspace ref={blocklyRef} onCodeChange={setCode} />
         <pre className="log">{log || "ここにビルドログが表示されます。"}</pre>
       </main>
+      {sdCardPanelOpen && <SdCardPanel onClose={() => setSdCardPanelOpen(false)} />}
     </div>
   );
 }

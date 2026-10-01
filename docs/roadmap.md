@@ -56,7 +56,7 @@
 electron-builderのインストール先フォルダ名(`@spresense-blockseditor`)とも食い違って
 デバッグ時に混乱を招いた。`app.setName("spresense-blocks")` を明示することで解決した。
 
-## 🔶 Phase 3 — sensor-addon ＋ audio パック（進行中）
+## ✅ Phase 3 — sensor-addon ＋ audio パック（完了）
 
 - [x] センサー拡張ボード(SSCI-052580、BMP280/BMI160搭載、2026年時点で販売終了)の値取得ブロック
   - 加速度(X/Y/Z、G単位)・気圧(hPa)・温度(℃)の3ブロック、カテゴリ色はセンシングと同じ水色
@@ -72,11 +72,51 @@ electron-builderのインストール先フォルダ名(`@spresense-blockseditor
   - 実機相当の自動セットアップ環境で、加速度・気圧・温度ブロックを含む統合スケッチの
     コンパイル成功を確認済み(2026-09-29)。**実機(実際のセンサー値)での動作確認はまだ未実施**
     (開発者がまだセンサー拡張ボードを入手していないため)
-- [ ] 音声パック(SD再生・簡易録音)
-  - `Audio.h` の初期化ボイラープレートをコード生成側に隠す
-  - 「SDカード準備アシスタント」UI(デコーダファイル配置を自動化し、コンパイルは通るのに音が出ない問題を防ぐ)
-- [ ] 各パックにゴールデンファイル方式のコード生成テストを追加(sensor-addonは追加済み)
-- [ ] CIで実際に `arduino-cli compile` を通すサンプルプロジェクトを追加
+- [x] 「ゆる楽器」パック(Sony公式 ssprocLib = Sound Signal Processing Library for Spresenseを使用)
+  - リポジトリ: https://github.com/SonySemiconductorSolutions/ssih-music。Arduino Library Managerには
+    未登録のため、他のライブラリと同様GitHubからコミット固定(タグv1.3.0)で自動取得する
+  - `examples/ButtonDrum` の構成(ボタン入力→SDSinkでWAV再生)をブロック化。
+    「ゆる楽器を鳴らす(音色: ピアノ/サックス)」ブロック1つ(SDSinkの初期化・毎ループの`update()`を隠す)と、
+    「ボタン(ピン)を押している間、音(2オクターブ分のドレミファソラシ)を鳴らす」ブロックの組み合わせ
+  - ssprocLibのexample自体が使っている`Button`ヘルパークラス(チャタリング防止)は、SketchBuilderの
+    出力順(クラス定義が常にグローバル変数より後に出る)と相性が悪いため採用せず、同じロジックを
+    グローバル変数+if文でインライン展開している(詳しくは
+    [adding-a-block-pack.md](./adding-a-block-pack.md) を参照)
+  - 実機相当の自動セットアップ環境で、ssprocLib自体のコンパイル成功を確認済み(2026-09-29)
+- [x] 音源アセット(ピアノ・サックス、各2オクターブ)の同梱と「SDカード準備アシスタント」
+  - 録音済み素材はライセンスが不明瞭になりがちなため使わず、
+    `packages/block-packs/instrument/tools/generate-sound-assets.py` で倍音合成した
+    オリジナルのWAV(48kHz/16bit/2ch。ssprocLibのPcmRendererが要求する形式に厳密に合わせている)を
+    生成し、`apps/editor/resources/instrument-sounds/{Piano,Sax}/` にコミット済み
+  - SPRESENSE本体はUSB接続時にSDカードをドライブとして公開しない(書き込み用シリアルポートとしてしか
+    見えない)ため、「コンパイル&書き込み」と同じ流れでは音源を配置できない。そこでユーザーが
+    microSDカードを取り外してPC本体・USBカードリーダーに挿す運用を前提にした別画面
+    (ツールバーの「SDカードに音源をコピー」→`apps/editor/src/renderer/src/SdCardPanel.tsx`)を用意し、
+    PowerShell経由でリムーバブルドライブを検出して(`apps/editor/src/main/sdcard.ts`)、
+    選んだ音色フォルダをそのままコピーする
+  - electron-builderの`extraResources`でパッケージ後も`resources/instrument-sounds/`が
+    同梱されるようにした(`apps/editor/electron-builder.yml`)
+  - 実機相当の自動セットアップ環境で、Piano/Sax両方の音源テーブルを含む統合スケッチの
+    コンパイル成功を確認済み(2026-09-29)。**実機(実際のSDカード+スピーカーでの音出し)での
+    動作確認はまだ未実施**(生成した音がssprocLib上で実際にどう聞こえるかは、実機で確認するまで未検証)
+  - **未着手**: 実機(実際のSDカード+スピーカー)での音出し確認
+- [x] 各パックにゴールデンファイル方式のコード生成テストを追加(全パック完了)
+- [x] CIで実際に `arduino-cli compile` を通すサンプルプロジェクトを追加
+  - `.github/workflows/ci.yml`: push/PR時に (1) typecheck・単体テスト、(2) 実際の
+    `arduino-cli compile` でのサンプルプロジェクトのコンパイル確認、の2ジョブを実行
+  - サンプルは手書きではなく、アプリ本体と同じ `codegen.ts`(全パック共有の
+    `Blockly.Generator` を合成する場所)経由で生成する
+    (`apps/editor/test/generate-ci-samples.test.ts` → `npm run generate:ci-samples`)。
+    「ユニットテストは通るが、実アプリの合成経路では壊れている」種類の回帰を検知できる
+  - ライブラリのインストール先(Library Manager名 or git-url)は `packages/board-spresense` の
+    `allBlockPackLibraries` を単一の情報源にし、CI(`scripts/ci-install-arduino-deps.mjs`)と
+    アプリ本体の自動セットアップ(`apps/editor/src/main/setup.ts`)の両方がそこを参照する設計にした
+    (新しいブロックパックのライブラリを追加するとき、更新箇所が1箇所で済む)
+- [x] SDカード機能のUI動作確認: Playwrightの `_electron` でElectronアプリを実際に起動・操作して
+  検証するしくみを整備した(`.claude/skills/run-desktop/`)。手動のdynamic-importハックでは
+  この環境で `app.whenReady()` が極端に遅延する問題があったが、`_electron.launch()` を使うことで
+  解消し、実際にボタンクリック→モーダル表示→チェックボックス(ピアノ/サックス)の状態→
+  ドライブ検出結果までエンドツーエンドで確認できた
 
 ## ⬜ Phase 4 — MVP仕上げ
 

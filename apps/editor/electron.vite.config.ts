@@ -12,6 +12,7 @@ const workspacePackages = [
   "@spresense-blocks/codegen-core",
   "@spresense-blocks/block-pack-core-io",
   "@spresense-blocks/block-pack-sensor-addon",
+  "@spresense-blocks/block-pack-instrument",
   "@spresense-blocks/block-shared",
 ];
 
