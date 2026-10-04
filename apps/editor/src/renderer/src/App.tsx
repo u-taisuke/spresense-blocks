@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from "./BlocklyWorkspace";
 import { CodeView } from "./CodeView";
+import { useConfirmDialog } from "./ConfirmDialog";
 import { Icon } from "./Icon";
 import { LearnPanel } from "./LearnPanel";
 import { TutorialView } from "./TutorialView";
@@ -81,6 +82,7 @@ function Editor(): React.JSX.Element {
   const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>("log");
   const [buildStatus, setBuildStatus] = useState<BuildStatus>({ kind: "idle" });
   const blocklyRef = useRef<BlocklyWorkspaceHandle>(null);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   // 「保存していない変更があるか」を、生成されるC++コードが最後に保存・読込したときから
   // 変わったかどうかで判断する(ブロックの位置を動かしただけの変更は対象外になるが、
   // 別のプログラムを開く前の確認としては十分)。
@@ -208,11 +210,15 @@ function Editor(): React.JSX.Element {
   };
 
   /** 保存していない変更があれば、別のプログラムに置き換えてよいか確認する。 */
-  const confirmDiscardChanges = (): boolean => {
+  const confirmDiscardChanges = async (): Promise<boolean> => {
     if (savedCodeRef.current === null || codeRef.current === savedCodeRef.current) {
       return true;
     }
-    return window.confirm("今のプログラムは保存されていません。開くと、今のプログラムは消えてしまいます。\n開いてもよいですか？");
+    return confirm({
+      title: "保存していない変更があります",
+      message: "今のプログラムは保存されていません。開くと、今のプログラムは消えてしまいます。\n開いてもよいですか？",
+      confirmLabel: "開く",
+    });
   };
 
   const handleSave = useCallback(async () => {
@@ -238,7 +244,7 @@ function Editor(): React.JSX.Element {
   }, [currentFilePath]);
 
   const handleOpen = useCallback(async () => {
-    if (!confirmDiscardChanges()) {
+    if (!(await confirmDiscardChanges())) {
       return;
     }
     try {
@@ -257,7 +263,7 @@ function Editor(): React.JSX.Element {
   }, []);
 
   const handleOpenSample = useCallback(async (file: string) => {
-    if (!confirmDiscardChanges()) {
+    if (!(await confirmDiscardChanges())) {
       return;
     }
     try {
@@ -317,6 +323,23 @@ function Editor(): React.JSX.Element {
       });
       return;
     }
+    // 選んだポートがSPRESENSEとして認識されていない(別の機器、または抜かれた後のポート)ときは、
+    // 間違った機器に書き込もうとしていないか、本当に書き込むかを確認する。
+    const selectedBoard = ports.find((p) => p.port === selectedPort);
+    if (!selectedBoard || !isSpresenseDetectedBoard(selectedBoard)) {
+      const portLabel = selectedBoard?.boardName ? `${selectedPort}(${selectedBoard.boardName})` : selectedPort;
+      const confirmed = await confirm({
+        title: "SPRESENSEが見つかりません",
+        message:
+          `選ばれているポート「${portLabel}」は、SPRESENSEとして認識されていません。\n` +
+          "SPRESENSEがUSBケーブルでつながっているか、ポートの選択が正しいかを確認してください。\n\n" +
+          "このまま書き込みますか？",
+        confirmLabel: "書き込む",
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
     setBusy(true);
     setBuildStatus({ kind: "busy" });
     setLog("");
@@ -333,7 +356,7 @@ function Editor(): React.JSX.Element {
     } finally {
       setBusy(false);
     }
-  }, [code, selectedPort]);
+  }, [code, selectedPort, ports, confirm]);
 
   const fileName = currentFilePath?.split(/[/\\]/).pop() ?? untitledLabel;
 
@@ -473,6 +496,7 @@ function Editor(): React.JSX.Element {
           onOpenSample={handleOpenSample}
         />
       )}
+      {confirmDialog}
       {tutorialOpen && <TutorialView onClose={() => setTutorialOpen(false)} onOpenSample={handleOpenSample} />}
     </div>
   );
