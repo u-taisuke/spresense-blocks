@@ -15,6 +15,9 @@ export function installMessages(): void {
 const VOICE_OPTIONS: Blockly.MenuOption[] = [
   ["%{BKY_SPRESENSE_INSTRUMENT_VOICE_PIANO}", "Piano"],
   ["%{BKY_SPRESENSE_INSTRUMENT_VOICE_SAX}", "Sax"],
+  ["%{BKY_SPRESENSE_INSTRUMENT_VOICE_ORGAN}", "Organ"],
+  ["%{BKY_SPRESENSE_INSTRUMENT_VOICE_GLOCK}", "Glock"],
+  ["%{BKY_SPRESENSE_INSTRUMENT_VOICE_CHIP}", "Chip"],
 ];
 
 /**
