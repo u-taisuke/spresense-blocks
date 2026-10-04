@@ -161,7 +161,7 @@ export function installBlocks(): void {
       type: "spresense_variable_set",
       message0: "%{BKY_SPRESENSE_COREIO_VARIABLE_SET}",
       args0: [
-        { type: "field_input", name: "NAME", text: "へんすう" },
+        { type: "field_input", name: "NAME", text: "カウント" },
         { type: "input_value", name: "VALUE", check: "Number" },
       ],
       previousStatement: null,
@@ -172,7 +172,7 @@ export function installBlocks(): void {
     {
       type: "spresense_variable_get",
       message0: "%{BKY_SPRESENSE_COREIO_VARIABLE_GET}",
-      args0: [{ type: "field_input", name: "NAME", text: "へんすう" }],
+      args0: [{ type: "field_input", name: "NAME", text: "カウント" }],
       output: "Number",
       colour: BlockCategoryColour.VARIABLE,
       tooltip: "%{BKY_SPRESENSE_COREIO_VARIABLE_GET_TOOLTIP}",

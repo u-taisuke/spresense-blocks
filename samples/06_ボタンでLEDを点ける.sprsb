@@ -13,46 +13,70 @@
           "inputs": {
             "DO": {
               "block": {
-                "type": "spresense_instrument_setup",
-                "id": "b46",
-                "fields": { "VOICE": "Piano" },
+                "type": "spresense_variable_set",
+                "id": "b8",
+                "fields": { "NAME": "押した" },
+                "inputs": {
+                  "VALUE": {
+                    "block": {
+                      "type": "spresense_number",
+                      "id": "b7",
+                      "fields": { "NUM": 0 }
+                    }
+                  }
+                },
                 "next": {
                   "block": {
-                    "type": "spresense_variable_set",
-                    "id": "b48",
-                    "fields": { "NAME": "かたむき" },
+                    "type": "spresense_if",
+                    "id": "b12",
                     "inputs": {
-                      "VALUE": {
+                      "CONDITION": {
                         "block": {
-                          "type": "spresense_sensor_accel",
-                          "id": "b47",
-                          "fields": { "AXIS": "0" }
+                          "type": "spresense_digital_read",
+                          "id": "b9",
+                          "fields": { "PIN": "PIN_D04" }
+                        }
+                      },
+                      "DO": {
+                        "block": {
+                          "type": "spresense_variable_set",
+                          "id": "b11",
+                          "fields": { "NAME": "押した" },
+                          "inputs": {
+                            "VALUE": {
+                              "block": {
+                                "type": "spresense_number",
+                                "id": "b10",
+                                "fields": { "NUM": 1 }
+                              }
+                            }
+                          }
                         }
                       }
                     },
                     "next": {
                       "block": {
                         "type": "spresense_if",
-                        "id": "b53",
+                        "id": "b17",
                         "inputs": {
                           "CONDITION": {
                             "block": {
                               "type": "spresense_compare",
-                              "id": "b51",
-                              "fields": { "OP": "GT" },
+                              "id": "b15",
+                              "fields": { "OP": "EQ" },
                               "inputs": {
                                 "A": {
                                   "block": {
                                     "type": "spresense_variable_get",
-                                    "id": "b49",
-                                    "fields": { "NAME": "かたむき" }
+                                    "id": "b13",
+                                    "fields": { "NAME": "押した" }
                                   }
                                 },
                                 "B": {
                                   "block": {
                                     "type": "spresense_number",
-                                    "id": "b50",
-                                    "fields": { "NUM": 0.5 }
+                                    "id": "b14",
+                                    "fields": { "NUM": 1 }
                                   }
                                 }
                               }
@@ -60,35 +84,35 @@
                           },
                           "DO": {
                             "block": {
-                              "type": "spresense_instrument_play_note",
-                              "id": "b52",
-                              "fields": { "NOTE": "60", "DURATION_MS": 500, "VOLUME": 100 }
+                              "type": "spresense_onboard_led_set",
+                              "id": "b16",
+                              "fields": { "LED": "LED0", "STATE": "HIGH" }
                             }
                           }
                         },
                         "next": {
                           "block": {
                             "type": "spresense_if",
-                            "id": "b58",
+                            "id": "b22",
                             "inputs": {
                               "CONDITION": {
                                 "block": {
                                   "type": "spresense_compare",
-                                  "id": "b56",
-                                  "fields": { "OP": "LT" },
+                                  "id": "b20",
+                                  "fields": { "OP": "EQ" },
                                   "inputs": {
                                     "A": {
                                       "block": {
                                         "type": "spresense_variable_get",
-                                        "id": "b54",
-                                        "fields": { "NAME": "かたむき" }
+                                        "id": "b18",
+                                        "fields": { "NAME": "押した" }
                                       }
                                     },
                                     "B": {
                                       "block": {
                                         "type": "spresense_number",
-                                        "id": "b55",
-                                        "fields": { "NUM": -0.5 }
+                                        "id": "b19",
+                                        "fields": { "NUM": 0 }
                                       }
                                     }
                                   }
@@ -96,9 +120,9 @@
                               },
                               "DO": {
                                 "block": {
-                                  "type": "spresense_instrument_play_note",
-                                  "id": "b57",
-                                  "fields": { "NOTE": "67", "DURATION_MS": 500, "VOLUME": 100 }
+                                  "type": "spresense_onboard_led_set",
+                                  "id": "b21",
+                                  "fields": { "LED": "LED0", "STATE": "LOW" }
                                 }
                               }
                             }

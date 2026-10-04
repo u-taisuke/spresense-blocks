@@ -63,6 +63,22 @@ UIの他の部分には影響しない)。
 | `windows` | list all windows |
 | `quit` | close app, exit |
 
+### Linux(クラウド環境など)で動かす場合
+
+Windows以外でも、`xvfb-run` を使えば同じ方法で起動・スクリーンショットができる
+(2026-10-04 確認)。`executablePath` は `node_modules/electron/dist/electron`(`.exe` 無し)にし、
+`args` の先頭に `--no-sandbox` を付ける。
+
+```bash
+xvfb-run -a -s "-screen 0 1700x900x24" node <リポジトリ内に置いたスクリプト>.mjs
+```
+
+- `page.setViewportSize({ width: 1366, height: 800 })` で、学校PCに多い画面幅での見え方を確認できる。
+- 「開く」のファイルダイアログは、mainプロセス側で差し替えればサンプルを読み込める:
+  `await app.evaluate(({ dialog }, p) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [p] }); }, samplePath);`
+- ツールボックスのカテゴリは、Playwrightの実マウス操作(`elementHandle.click()`)ならフライアウトが開いた
+  (DOMの `click()`/`dispatchEvent` では開かない)。
+
 ## 実行(人間向け)
 
 ```bash

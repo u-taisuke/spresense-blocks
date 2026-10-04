@@ -15,7 +15,7 @@
               "block": {
                 "type": "spresense_variable_set",
                 "id": "b24",
-                "fields": { "NAME": "おんど" },
+                "fields": { "NAME": "温度" },
                 "inputs": {
                   "VALUE": {
                     "block": {
@@ -39,7 +39,7 @@
                               "block": {
                                 "type": "spresense_variable_get",
                                 "id": "b25",
-                                "fields": { "NAME": "おんど" }
+                                "fields": { "NAME": "温度" }
                               }
                             },
                             "B": {
@@ -75,7 +75,7 @@
                                   "block": {
                                     "type": "spresense_variable_get",
                                     "id": "b30",
-                                    "fields": { "NAME": "おんど" }
+                                    "fields": { "NAME": "温度" }
                                   }
                                 },
                                 "B": {

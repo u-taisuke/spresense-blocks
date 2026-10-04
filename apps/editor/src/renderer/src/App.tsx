@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from "./BlocklyWorkspace";
 import { CodeView } from "./CodeView";
+import { Icon } from "./Icon";
 import { PortSelect } from "./PortSelect";
 import { SdCardPanel } from "./SdCardPanel";
 import { SetupScreen } from "./SetupScreen";
@@ -17,6 +18,15 @@ const PORT_WATCH_INTERVAL_MS = 2000;
 
 const USB_DRIVER_HELP_URL = "https://developer.sony.com/develop/spresense/";
 
+/** 右パネル上部のバナーに表示する、書き込みの状態。 */
+type BuildStatus =
+  | { kind: "idle" }
+  | { kind: "busy" }
+  | { kind: "success" }
+  | { kind: "error"; message: string };
+
+type SidePanelTab = "log" | "code";
+
 /**
  * arduino-cli / SPRESENSEコアのセットアップが終わるまでは SetupScreen を表示し、
  * 終わってから初めて実際のブロックエディタ(Editor)をマウントする。
@@ -24,7 +34,7 @@ const USB_DRIVER_HELP_URL = "https://developer.sony.com/develop/spresense/";
  */
 export function App(): React.JSX.Element {
   const [setupReady, setSetupReady] = useState(false);
-  const [setupMessage, setSetupMessage] = useState("準備しています...");
+  const [setupMessage, setSetupMessage] = useState("準備しています…");
   const [setupError, setSetupError] = useState<string | null>(null);
 
   const runSetup = useCallback(() => {
@@ -62,7 +72,8 @@ function Editor(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [sdCardPanelOpen, setSdCardPanelOpen] = useState(false);
-  const [showCodeView, setShowCodeView] = useState(false);
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>("log");
+  const [buildStatus, setBuildStatus] = useState<BuildStatus>({ kind: "idle" });
   const blocklyRef = useRef<BlocklyWorkspaceHandle>(null);
   const busyRef = useRef(busy);
   const previousPortIdsRef = useRef<string[]>([]);
@@ -83,17 +94,21 @@ function Editor(): React.JSX.Element {
     });
   }, []);
 
-  // 生成されたC++コードを見るパネル。ツールバーのボタンに加えて、Ctrl+Shift+Cでも切りかえられる。
+  // 右パネルの「メッセージ」と「C++コード」のタブ。ツールバーのボタンに加えて、Ctrl+Shift+Cでも切り替えられる。
+  const toggleCodeTab = useCallback(() => {
+    setSidePanelTab((prev) => (prev === "code" ? "log" : "code"));
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "c") {
         event.preventDefault();
-        setShowCodeView((prev) => !prev);
+        toggleCodeTab();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [toggleCodeTab]);
 
   const refreshPorts = useCallback((options?: { silent?: boolean }): Promise<void> => {
     if (inFlightRefreshRef.current) {
@@ -205,68 +220,206 @@ function Editor(): React.JSX.Element {
   }, []);
 
   const handleBuild = useCallback(async () => {
+    setSidePanelTab("log");
     if (!selectedPort) {
-      window.alert("USBポートが選ばれていません。SPRESENSEをUSBで接続してからポートを選んでください。");
+      setBuildStatus({
+        kind: "error",
+        message: "USBポートが選ばれていません。SPRESENSEをUSBで接続してから、ポートを選んでください。",
+      });
       return;
     }
     setBusy(true);
+    setBuildStatus({ kind: "busy" });
     setLog("");
     try {
       await window.spresense.compileAndUpload(code, selectedPort);
       setLog((prev) => `${prev}\n書き込みが完了しました。SPRESENSEの動きを確認してください。\n`);
+      setBuildStatus({ kind: "success" });
     } catch (error) {
       setLog((prev) => `${prev}\nエラーが発生しました: ${String(error)}\n`);
+      setBuildStatus({
+        kind: "error",
+        message: "エラーが発生しました。下のメッセージを確認してください。",
+      });
     } finally {
       setBusy(false);
     }
   }, [code, selectedPort]);
 
-  const fileName = currentFilePath?.split(/[/\\]/).pop() ?? "(名前未設定)";
+  const fileName = currentFilePath?.split(/[/\\]/).pop() ?? "名前未設定";
 
   return (
     <div className="app">
       <header className="toolbar">
-        <span className="title">Spresense Blocks</span>
-        <span className="file-name" title={currentFilePath ?? ""}>
-          {fileName}
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-name">Spresense Blocks</span>
+        </div>
+        <span className="file-chip" title={currentFilePath ?? "まだ保存していません"}>
+          <Icon name="file" size={14} />
+          <span className="file-chip-name">{fileName}</span>
         </span>
-        <button type="button" onClick={handleOpen} disabled={busy}>
-          開く
-        </button>
-        <button type="button" onClick={handleSave} disabled={busy}>
-          保存
-        </button>
-        <PortSelect
-          ports={ports}
-          selectedPort={selectedPort}
-          isRefreshing={isRefreshingPorts}
-          disabled={busy}
-          onOpen={() => refreshPorts()}
-          onSelect={setSelectedPort}
-        />
-        <button type="button" className="primary" onClick={handleBuild} disabled={busy}>
-          {busy ? "書き込み中..." : "コンパイル & 書き込み"}
-        </button>
-        <button type="button" onClick={() => setSdCardPanelOpen(true)}>
-          SDカードに音源をコピー
-        </button>
-        <button type="button" onClick={() => setShowCodeView((prev) => !prev)}>
-          {showCodeView ? "コードを隠す" : "コードを見る"}
-        </button>
-        <button
-          type="button"
-          className="help-link"
-          onClick={() => window.spresense.openExternal(USB_DRIVER_HELP_URL)}
-        >
-          USBが認識されないときは
-        </button>
+
+        <div className="toolbar-group">
+          <button type="button" className="tool-button" onClick={handleOpen} disabled={busy} title="保存したプログラムを開きます">
+            <Icon name="open" />
+            <span className="tool-label">開く</span>
+          </button>
+          <button type="button" className="tool-button" onClick={handleSave} disabled={busy} title="プログラムをファイルに保存します">
+            <Icon name="save" />
+            <span className="tool-label">保存</span>
+          </button>
+        </div>
+
+        <div className="toolbar-spacer" />
+
+        <div className="toolbar-group">
+          <PortSelect
+            ports={ports}
+            selectedPort={selectedPort}
+            isRefreshing={isRefreshingPorts}
+            disabled={busy}
+            onOpen={() => refreshPorts()}
+            onSelect={setSelectedPort}
+          />
+          <button
+            type="button"
+            className="write-button"
+            onClick={handleBuild}
+            disabled={busy}
+            title="ブロックをプログラムに変換(コンパイル)して、SPRESENSEに書き込みます"
+          >
+            {busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="upload" />}
+            <span>{busy ? "書き込み中…" : "書き込む"}</span>
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button
+            type="button"
+            className="tool-button"
+            onClick={() => setSdCardPanelOpen(true)}
+            title="「ゆる楽器」で使う音源をSDカードにコピーします"
+          >
+            <Icon name="music" />
+            <span className="tool-label">音源コピー</span>
+          </button>
+          <button
+            type="button"
+            className={`tool-button${sidePanelTab === "code" ? " is-active" : ""}`}
+            onClick={toggleCodeTab}
+            aria-pressed={sidePanelTab === "code"}
+            title="ブロックから作られたC++のプログラムを表示します(Ctrl+Shift+C)"
+          >
+            <Icon name="code" />
+            <span className="tool-label">コード</span>
+          </button>
+          <button
+            type="button"
+            className="tool-button"
+            onClick={() => window.spresense.openExternal(USB_DRIVER_HELP_URL)}
+            title="USBが認識されないとき: SPRESENSEのドライバーなどの案内ページを開きます"
+            aria-label="USBが認識されないとき"
+          >
+            <Icon name="help" />
+          </button>
+        </div>
       </header>
+
       <main className="main">
         <BlocklyWorkspace ref={blocklyRef} onCodeChange={setCode} />
-        {showCodeView && <CodeView code={code} />}
-        <pre className="log">{log || "ここにビルドログが表示されます。"}</pre>
+        <aside className="side-panel">
+          <div className="side-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sidePanelTab === "log"}
+              className={`side-tab${sidePanelTab === "log" ? " is-active" : ""}`}
+              onClick={() => setSidePanelTab("log")}
+            >
+              メッセージ
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sidePanelTab === "code"}
+              className={`side-tab${sidePanelTab === "code" ? " is-active" : ""}`}
+              onClick={() => setSidePanelTab("code")}
+            >
+              C++コード
+            </button>
+          </div>
+          {sidePanelTab === "log" ? (
+            <>
+              <StatusBanner
+                status={buildStatus}
+                onOpenUsbHelp={() => window.spresense.openExternal(USB_DRIVER_HELP_URL)}
+              />
+              <pre className="log">{log.replace(/^\n+/, "") || "「書き込む」を押すと、ここに進み具合やエラーが表示されます。"}</pre>
+            </>
+          ) : (
+            <CodeView code={code} />
+          )}
+        </aside>
       </main>
       {sdCardPanelOpen && <SdCardPanel onClose={() => setSdCardPanelOpen(false)} />}
     </div>
   );
+}
+
+interface StatusBannerProps {
+  status: BuildStatus;
+  onOpenUsbHelp: () => void;
+}
+
+/**
+ * 右パネル上部の、今の状態を色で示す帯。USBまわりで困りやすい「待機中」と「エラー」のときは、
+ * ドライバーの案内ページへのリンクも一緒に出す(ツールバーの?ボタンと同じページ)。
+ */
+function StatusBanner({ status, onOpenUsbHelp }: StatusBannerProps): React.JSX.Element {
+  const usbHelpLink = (
+    <button type="button" className="text-link" onClick={onOpenUsbHelp}>
+      USBが認識されないとき
+    </button>
+  );
+  switch (status.kind) {
+    case "busy":
+      return (
+        <div className="status-banner is-busy" role="status">
+          <span className="spinner" aria-hidden="true" />
+          <span>書き込んでいます。USBケーブルを抜かずに待ってください。</span>
+        </div>
+      );
+    case "success":
+      return (
+        <div className="status-banner is-success" role="status">
+          <Icon name="check" />
+          <span>書き込みが完了しました。SPRESENSEの動きを確認しましょう。</span>
+        </div>
+      );
+    case "error":
+      return (
+        <div className="status-banner is-error" role="alert">
+          <Icon name="alert" />
+          <span>
+            {status.message}
+            <br />
+            {usbHelpLink}
+          </span>
+        </div>
+      );
+    default:
+      return (
+        <div className="status-banner" role="status">
+          <Icon name="usb" />
+          <span>
+            SPRESENSEをUSBでつないで、「書き込む」を押しましょう。
+            <br />
+            {usbHelpLink}
+          </span>
+        </div>
+      );
+  }
 }

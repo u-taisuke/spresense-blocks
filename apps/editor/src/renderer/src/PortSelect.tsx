@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { DetectedBoard } from "@spresense-blocks/arduino-cli-bridge";
+import { isSpresenseDetectedBoard } from "@spresense-blocks/board-spresense";
+import { Icon } from "./Icon";
 
 export interface PortSelectProps {
   ports: DetectedBoard[];
@@ -60,7 +62,9 @@ export function PortSelect({
   const selectedBoard = ports.find((p) => p.port === selectedPort);
   const label = selectedBoard
     ? `${selectedBoard.port}${selectedBoard.boardName ? ` - ${selectedBoard.boardName}` : ""}`
-    : selectedPort || "(ポート未選択)";
+    : selectedPort || "ポートを選択";
+  // つながっている(SPRESENSEとして認識できた)かどうかを、ボタン左の丸い印の色で示す。
+  const connection = selectedBoard && isSpresenseDetectedBoard(selectedBoard) ? "connected" : selectedPort ? "unknown" : "none";
 
   return (
     <div className="port-select" ref={containerRef}>
@@ -69,28 +73,41 @@ export function PortSelect({
         className="port-select-trigger"
         onClick={handleToggle}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="SPRESENSEをつないでいるUSBポートを選びます(つなぐと自動で選ばれます)"
       >
-        <span>{label}</span>
-        <span className="port-select-caret">▾</span>
+        <span className={`port-dot is-${connection}`} aria-hidden="true" />
+        <span className="port-select-label">{label}</span>
+        <span className="port-select-caret">
+          <Icon name="chevron" size={16} />
+        </span>
       </button>
       {open && (
-        <ul className="port-select-menu">
-          {isRefreshing && <li className="port-select-status">さがしています...</li>}
+        <ul className="port-select-menu" role="listbox">
+          {isRefreshing && <li className="port-select-status">探しています…</li>}
           {!isRefreshing && ports.length === 0 && (
-            <li className="port-select-status">USBポートが見つかりません</li>
+            <li className="port-select-status">
+              USBポートが見つかりません。SPRESENSEをUSBケーブルでつないでください。
+            </li>
           )}
           {ports.map((p) => (
             <li key={p.port}>
               <button
                 type="button"
-                className="port-select-option"
+                className={`port-select-option${p.port === selectedPort ? " is-selected" : ""}`}
+                role="option"
+                aria-selected={p.port === selectedPort}
                 onClick={() => {
                   onSelect(p.port);
                   setOpen(false);
                 }}
               >
-                {p.port}
-                {p.boardName ? ` - ${p.boardName}` : ""}
+                <span className={`port-dot is-${isSpresenseDetectedBoard(p) ? "connected" : "unknown"}`} aria-hidden="true" />
+                <span>
+                  {p.port}
+                  {p.boardName ? ` - ${p.boardName}` : ""}
+                </span>
               </button>
             </li>
           ))}

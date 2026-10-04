@@ -1,6 +1,54 @@
+/*
+ * 配色・寸法はここの変数にまとめている。色を変えるときは、まずここを変更する。
+ *
+ * フォントは、Windows 10以降に標準で入っている教育向けのユニバーサルデザインフォント
+ * 「BIZ UDPゴシック」を最優先にしている(読み間違えにくい字形で、学校のPCでも追加インストール不要)。
+ * 無い環境では Yu Gothic UI → メイリオ → OS標準の順に代わりのフォントを使う。
+ */
 :root {
   color-scheme: light;
-  font-family: "Yu Gothic UI", "Segoe UI", sans-serif;
+  --font-ui: "BIZ UDPGothic", "BIZ UDPゴシック", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Hiragino Sans",
+    "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "BIZ UDGothic", "Cascadia Mono", "Consolas", "Noto Sans Mono", monospace;
+
+  --color-bg: #f3f5f9;
+  --color-surface: #ffffff;
+  --color-border: #e1e5ee;
+  --color-border-strong: #c9d0de;
+  --color-text: #1f2633;
+  --color-text-muted: #5c6577;
+  --color-text-subtle: #8a93a5;
+
+  --color-primary: #3b5bdb;
+  --color-primary-hover: #364fc7;
+  --color-primary-soft: #edf2ff;
+  --color-accent: #f76707;
+  --color-accent-hover: #e8590c;
+  --color-success: #2b8a3e;
+  --color-success-soft: #ebfbee;
+  --color-danger: #c92a2a;
+  --color-danger-soft: #fff5f5;
+  --color-warning: #e67700;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(20, 30, 60, 0.06);
+  --shadow-md: 0 4px 14px rgba(20, 30, 60, 0.1);
+  --shadow-lg: 0 18px 48px rgba(20, 30, 60, 0.22);
+
+  --toolbar-height: 60px;
+  --side-panel-width: 380px;
+
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
@@ -10,55 +58,237 @@ body,
   margin: 0;
 }
 
+body {
+  background: var(--color-bg);
+}
+
+button {
+  font-family: inherit;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(59, 91, 219, 0.35);
+  outline-offset: 1px;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
+
+/* ───────── ツールバー ───────── */
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #2d3f6c;
-  color: white;
-}
-
-.toolbar .title {
-  font-size: 1.1rem;
-  font-weight: bold;
-  margin-right: 8px;
-}
-
-.toolbar .file-name {
-  font-size: 0.85rem;
-  color: #cfd8ee;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  gap: 10px;
+  height: var(--toolbar-height);
+  padding: 0 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 20;
   white-space: nowrap;
 }
 
-/* 直接の子だけを対象にする(port-select内部のボタンは自前のスタイルを使うため)。 */
-.toolbar > button {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  background: #4a6cd4;
-  color: white;
-  font-size: 0.95rem;
-  cursor: pointer;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 4px;
 }
 
-.toolbar > button:disabled {
-  opacity: 0.6;
+/* ブロックが積み重なった形のロゴ。画像ファイルを持たずCSSだけで描く。 */
+.brand-mark {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.brand-mark::before,
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.brand-mark::before {
+  top: 2px;
+  background: var(--color-accent);
+  width: 70%;
+}
+
+.brand-mark::after {
+  bottom: 2px;
+  background: var(--color-primary);
+}
+
+.brand-mark.is-large {
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+}
+
+.brand-mark.is-large::before,
+.brand-mark.is-large::after {
+  height: 20px;
+  border-radius: 6px;
+}
+
+.brand-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.file-chip {
+  display: inline-flex;
+  min-width: 0;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.file-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--color-border);
+  margin: 0 2px;
+}
+
+.tool-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.tool-button:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.tool-button.is-active {
+  background: var(--color-primary-soft);
+  border-color: #c5d3ff;
+  color: var(--color-primary);
+}
+
+.tool-button:disabled {
+  opacity: 0.45;
   cursor: default;
 }
 
-.toolbar > button.primary {
-  background: #e07a2c;
+.write-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: white;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(247, 103, 7, 0.35);
+  transition: background 0.15s, transform 0.05s;
 }
+
+.write-button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.write-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.write-button:disabled {
+  background: #f8a56b;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* 横幅が狭い画面(ノートPC等)では、補助ボタンをアイコンだけにする(説明はマウスを乗せると出る)。 */
+@media (max-width: 1280px) {
+  .toolbar-group:last-child .tool-label {
+    display: none;
+  }
+  .toolbar-group:last-child .tool-button {
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .tool-label,
+  .brand-name {
+    display: none;
+  }
+  .tool-button {
+    padding: 0 10px;
+  }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ───────── ポート選択 ───────── */
 
 .port-select {
   position: relative;
@@ -68,65 +298,106 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 220px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: none;
-  background: white;
-  color: #222;
-  font-size: 0.95rem;
+  width: 240px;
+  height: 40px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.88rem;
   cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.port-select-trigger:hover:not(:disabled) {
+  border-color: var(--color-primary);
 }
 
 .port-select-trigger:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: default;
 }
 
+.port-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .port-select-caret {
+  display: inline-flex;
   margin-left: auto;
-  color: #888;
+  color: var(--color-text-subtle);
+}
+
+.port-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.port-dot.is-connected {
+  background: #37b24d;
+  box-shadow: 0 0 0 3px rgba(55, 178, 77, 0.2);
+}
+
+.port-dot.is-unknown {
+  background: #fab005;
 }
 
 .port-select-menu {
   position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 10;
-  min-width: 240px;
-  max-height: 240px;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 320px;
+  max-height: 280px;
   overflow-y: auto;
   margin: 0;
-  padding: 4px;
+  padding: 6px;
   list-style: none;
-  background: white;
-  color: #222;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  white-space: normal;
 }
 
 .port-select-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   text-align: left;
   cursor: pointer;
 }
 
 .port-select-option:hover {
-  background: #eef1fb;
+  background: var(--color-bg);
+}
+
+.port-select-option.is-selected {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .port-select-status {
-  padding: 8px 10px;
-  color: #888;
+  padding: 10px;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
+  line-height: 1.6;
 }
+
+/* ───────── メイン(ブロック作業エリア + 右パネル) ───────── */
 
 .main {
   flex: 1;
@@ -135,57 +406,207 @@ body,
 }
 
 .blockly-container {
-  flex: 3;
+  flex: 1;
+  min-width: 0;
   height: 100%;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--side-panel-width);
+  flex-shrink: 0;
+  min-height: 0;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+}
+
+.side-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.side-tab {
+  padding: 8px 14px 10px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.side-tab:hover {
+  color: var(--color-text);
+}
+
+.side-tab.is-active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 12px 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.status-banner .icon {
+  margin-top: 1px;
+}
+
+.text-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  opacity: 1;
+}
+
+.status-banner.is-busy {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.status-banner.is-busy .spinner {
+  margin-top: 2px;
+  border-color: rgba(59, 91, 219, 0.25);
+  border-top-color: var(--color-primary);
+}
+
+.status-banner.is-success {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.status-banner.is-error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .log {
   flex: 1;
-  margin: 0;
+  min-height: 0;
+  margin: 12px;
   padding: 12px;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fafbfd;
+  color: #3a4252;
   overflow-y: auto;
   white-space: pre-wrap;
-  font-family: "Consolas", monospace;
-  font-size: 0.85rem;
+  word-break: break-word;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
 }
 
-/* 生成されたC++コードを表示するパネル(ツールバーの「コードを見る」/Ctrl+Shift+Cで切りかえ)。
+/* 生成されたC++コードを表示するパネル(右パネルの「C++コード」タブ / Ctrl+Shift+C)。
    シンタックスハイライトの配色は highlight.js の atom-one-dark テーマ(CodeView.tsx)に合わせてある。 */
 .code-view {
   flex: 1;
-  margin: 0;
+  min-height: 0;
+  margin: 12px;
   padding: 0;
+  border-radius: var(--radius-md);
   background: #282c34;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  font-family: "Consolas", monospace;
+  overflow: auto;
+  white-space: pre;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
-  border-left: 2px solid #4a6cd4;
+  line-height: 1.55;
 }
 
 .code-view code.hljs {
   display: block;
-  padding: 12px;
+  padding: 14px;
+  background: transparent;
 }
+
+/* ───────── Blockly(ツールボックス・作業エリア)の見た目の調整 ───────── */
+
+.blocklyToolboxDiv {
+  padding: 8px 0;
+  border-right: 1px solid var(--color-border);
+}
+
+.blocklyToolboxCategory {
+  margin: 2px 8px;
+}
+
+.blocklyTreeRow {
+  display: flex;
+  align-items: center;
+  height: 40px !important;
+  padding: 0 12px 0 8px !important;
+  margin-bottom: 0 !important;
+  border-radius: var(--radius-md);
+  border-left-width: 6px !important;
+  line-height: 40px;
+  transition: background 0.12s;
+}
+
+.blocklyTreeRow:not(.blocklyTreeSelected):hover {
+  background: var(--color-bg) !important;
+}
+
+.blocklyTreeLabel {
+  font-family: var(--font-ui) !important;
+  font-size: 0.92rem !important;
+  color: var(--color-text);
+}
+
+.blocklyTreeSelected .blocklyTreeLabel {
+  color: white;
+  font-weight: 600;
+}
+
+.blocklyFlyoutBackground {
+  fill-opacity: 0.96;
+}
+
+.blocklyWidgetDiv .blocklyMenu,
+.blocklyDropDownDiv {
+  font-family: var(--font-ui) !important;
+}
+
+/* ───────── 初回セットアップ画面 ───────── */
 
 .setup-screen {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: #2d3f6c;
+  background: radial-gradient(circle at 30% 20%, #e7ecff 0%, var(--color-bg) 55%);
 }
 
 .setup-card {
-  width: 480px;
+  width: 500px;
   max-width: 90vw;
-  padding: 32px;
-  border-radius: 12px;
-  background: white;
+  padding: 40px 36px 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .setup-card h1 {
@@ -194,54 +615,89 @@ body,
 }
 
 .setup-note {
-  color: #555;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .setup-message {
-  font-weight: bold;
-  margin: 16px 0 4px;
+  font-weight: 700;
+  margin: 18px 0 4px;
 }
 
 .setup-spinner {
   width: 40px;
   height: 40px;
-  margin: 16px auto 0;
-  border: 4px solid #dde3f5;
-  border-top-color: #4a6cd4;
+  margin: 20px auto 0;
+  border: 4px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
-  animation: setup-spin 0.8s linear infinite;
-}
-
-@keyframes setup-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  animation: spin 0.8s linear infinite;
 }
 
 .setup-error-detail {
   max-height: 160px;
   overflow-y: auto;
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.setup-error button {
+.setup-error .primary-button {
   margin-top: 12px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  background: #e07a2c;
-  color: white;
-  font-size: 0.95rem;
-  cursor: pointer;
 }
+
+/* ───────── 共通ボタン ───────── */
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.primary-button {
+  border: none;
+  background: var(--color-accent);
+  color: white;
+  font-weight: 700;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.secondary-button {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ───────── モーダル(SDカードへの音源コピー) ───────── */
 
 .modal-overlay {
   position: fixed;
@@ -250,47 +706,134 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(20, 28, 45, 0.45);
+  animation: fade-in 0.15s ease-out;
 }
 
 .modal-card {
-  width: 480px;
-  max-width: 90vw;
-  max-height: 85vh;
+  width: 520px;
+  max-width: 92vw;
+  max-height: 88vh;
   overflow-y: auto;
-  padding: 24px;
-  border-radius: 12px;
-  background: white;
-  color: #222;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  padding: 24px 26px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  animation: pop-in 0.18s ease-out;
 }
 
-.modal-card h2 {
-  margin: 0 0 12px;
-  font-size: 1.2rem;
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fbefff;
+  color: #ae3ec9;
+}
+
+.modal-close {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .modal-note {
-  color: #555;
-  font-size: 0.85rem;
-  line-height: 1.6;
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.7;
 }
 
 .modal-section {
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .modal-section h3 {
-  margin: 0 0 8px;
-  font-size: 0.95rem;
-}
-
-.modal-checkbox {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.voice-options {
+  display: flex;
+  gap: 10px;
+}
+
+.voice-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
-  padding: 4px 0;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.voice-option.is-checked {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.voice-option input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
 }
 
 .modal-row {
@@ -301,18 +844,25 @@ body,
 
 .modal-row select {
   flex: 1;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 0.9rem;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.88rem;
 }
 
 .modal-status {
-  margin-top: 12px;
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 6px;
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
@@ -320,35 +870,5 @@ body,
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 20px;
-}
-
-.modal-actions button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  background: #e0e0e0;
-  color: #222;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.modal-actions button.primary {
-  background: #e07a2c;
-  color: white;
-}
-
-.modal-actions button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.help-link {
-  background: none;
-  border: none;
-  color: #cfd8ee;
-  font-size: 0.8rem;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0;
+  margin-top: 24px;
 }
