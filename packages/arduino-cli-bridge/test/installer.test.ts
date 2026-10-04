@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getPlatformAsset, needsLibraryInstall } from "../src/installer.js";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { ArduinoCliInstaller, getPlatformAsset, needsLibraryInstall } from "../src/installer.js";
 
 describe("getPlatformAsset", () => {
   const originalPlatform = process.platform;
@@ -73,5 +76,55 @@ describe("needsLibraryInstall", () => {
 
   it("skips a Library Manager library once it is installed", () => {
     expect(needsLibraryInstall(bmp280, [bmp280.name], {})).toBe(false);
+  });
+});
+
+describe("ArduinoCliInstaller library installation", () => {
+  const board = { coreId: "SPRESENSE:spresense", coreVersion: "3.4.7", boardManagerUrl: "https://example.com", arduinoCliVersion: "1.5.1" };
+  const lib = { name: "Sound Signal Processing Library for Spresense", gitUrl: "https://example.com/ssih-music.git#new" };
+  let appDataDir = "";
+
+  afterEach(() => {
+    if (appDataDir) {
+      rmSync(appDataDir, { recursive: true, force: true });
+    }
+  });
+
+  /** private な ensureLibrariesInstalled を、arduino-cli を起動しない偽のクライアントで呼ぶ。 */
+  function runEnsureLibraries(installedNames: string[], install: () => Promise<void>, messages: string[]): Promise<void> {
+    appDataDir = mkdtempSync(join(tmpdir(), "spresense-blocks-test-"));
+    const installer = new ArduinoCliInstaller(appDataDir, board) as unknown as {
+      ensureLibrariesInstalled(client: unknown, libraries: unknown[], onProgress: (e: { message: string }) => void): Promise<void>;
+    };
+    const client = {
+      getInstalledLibraryNames: async () => installedNames,
+      installLibraryFromGit: install,
+      installLibrary: install,
+    };
+    return installer.ensureLibrariesInstalled(client, [lib], (e) => messages.push(e.message));
+  }
+
+  it("records the pinned URL after a successful install", async () => {
+    await runEnsureLibraries([], async () => {}, []);
+    const pins = JSON.parse(readFileSync(join(appDataDir, "library-pins.json"), "utf8"));
+    expect(pins[lib.name]).toBe(lib.gitUrl);
+  });
+
+  it("keeps going with the old version when updating an installed library fails (e.g. offline)", async () => {
+    const messages: string[] = [];
+    await expect(
+      runEnsureLibraries([lib.name], async () => {
+        throw new Error("network unreachable");
+      }, messages)
+    ).resolves.toBeUndefined();
+    expect(messages.some((m) => m.includes("更新に失敗しました"))).toBe(true);
+  });
+
+  it("fails when a library that is not installed yet cannot be installed", async () => {
+    await expect(
+      runEnsureLibraries([], async () => {
+        throw new Error("network unreachable");
+      }, [])
+    ).rejects.toThrow("network unreachable");
   });
 });

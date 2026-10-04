@@ -100,6 +100,21 @@ npm run dist:win -w @spresense-blocks/editor
 すべてバンドル済みで、`arduino-cli` は初回起動時にアプリが自動でダウンロードします
 (コード署名は未対応のため、Windowsの警告が出ます)。
 
+### リリース(インストーラーの公開)の手順
+
+`v1.2.3` のようなタグをプッシュすると、GitHub Actions(`.github/workflows/release.yml`)が
+Windows上でテスト・インストーラーのビルドを行い、GitHub Releases に公開します。
+
+1. `apps/editor/package.json` の `version` を上げる(`npm install --package-lock-only` で
+   `package-lock.json` も更新する)。タグと一致していないとワークフローは失敗する
+2. `docs/release-notes/v1.2.3.md` にリリースノートを書く(Releasesの本文になる)
+3. `master` に反映してから、タグを打ってプッシュする
+
+```bash
+git tag -a v1.2.3 -m "Spresense Blocks v1.2.3"
+git push origin v1.2.3
+```
+
 ## リポジトリ構成
 
 ```

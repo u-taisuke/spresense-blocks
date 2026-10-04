@@ -273,12 +273,29 @@ export class ArduinoCliInstaller {
         onStderr: (chunk: string) =>
           onProgress({ step: "install-library", message: `${lib.name} をインストールしています...`, detail: chunk }),
       };
-      if (lib.gitUrl) {
-        await client.installLibraryFromGit(lib.gitUrl, events);
-        pins[lib.name] = lib.gitUrl;
-        this.writeLibraryPins(pins);
-      } else if (lib.libraryManagerName) {
-        await client.installLibrary(lib.libraryManagerName, events);
+      const isUpdate = installedNames.includes(lib.name);
+      try {
+        if (lib.gitUrl) {
+          await client.installLibraryFromGit(lib.gitUrl, events);
+          pins[lib.name] = lib.gitUrl;
+          this.writeLibraryPins(pins);
+        } else if (lib.libraryManagerName) {
+          await client.installLibrary(lib.libraryManagerName, events);
+        }
+      } catch (error) {
+        // 未インストールのライブラリが入れられないのは致命的(そのブロックを使うと必ずコンパイルに失敗する)
+        // なので、そのままエラーにする。一方、インストール済みのライブラリを新しい固定コミットに
+        // 入れ直す(更新する)のに失敗した場合は、古い版のままでも動くので起動を止めない。
+        // 教室のPCがオフラインのときにアプリ自体が使えなくなるのを避けるため。
+        // 記録(library-pins.json)は更新しないので、次回の起動時にもう一度入れ直しを試みる。
+        if (!isUpdate) {
+          throw error;
+        }
+        onProgress({
+          step: "install-library",
+          message: `${lib.name} の更新に失敗しました。今のバージョンのまま使います(次回の起動時にもう一度試します)`,
+          detail: String(error),
+        });
       }
     }
   }

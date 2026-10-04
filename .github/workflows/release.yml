@@ -1,0 +1,62 @@
+name: Release
+
+# `v1.2.3` のようなタグをプッシュすると、Windows上でインストーラー(.exe)をビルドし、
+# GitHub Releases に公開する。リリースノートは docs/release-notes/<タグ名>.md を使う。
+#
+# 手順(README.md の「リリース(インストーラーの公開)の手順」も参照):
+#   1. apps/editor/package.json の version を上げる(タグと一致していないとこのワークフローは失敗する)
+#   2. docs/release-notes/v1.2.3.md を書く
+#   3. master に反映してから `git tag -a v1.2.3 -m ... && git push origin v1.2.3`
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installer:
+    name: Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check that the tag matches the app version and release notes exist
+        shell: bash
+        run: |
+          version="v$(node -p "require('./apps/editor/package.json').version")"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::タグ($GITHUB_REF_NAME)と apps/editor/package.json の version($version)が一致しません"
+            exit 1
+          fi
+          if [ ! -f "docs/release-notes/$GITHUB_REF_NAME.md" ]; then
+            echo "::error::docs/release-notes/$GITHUB_REF_NAME.md がありません"
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      # electron-builder はCI上でタグを検出すると自動で公開(publish)しようとするため、
+      # ここでは --publish never でビルドだけ行い、公開は次のステップでまとめて行う。
+      # コード署名の証明書は無いので、自動検出も無効にする。
+      - name: Build installer
+        working-directory: apps/editor
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          npm run build
+          npx electron-builder --win --publish never
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Spresense Blocks ${{ github.ref_name }}
+          body_path: docs/release-notes/${{ github.ref_name }}.md
+          files: apps/editor/release/*.exe
+          fail_on_unmatched_files: true
