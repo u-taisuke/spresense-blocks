@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeAll } from "vitest";
@@ -271,6 +271,64 @@ describe("CI用サンプルプロジェクトの生成", () => {
       expect(sketch).toContain("void setup()");
       expect(sketch).toContain("void loop()");
 
+      const sampleDir = join(OUT_DIR, name);
+      mkdirSync(sampleDir, { recursive: true });
+      writeFileSync(join(sampleDir, `${name}.ino`), sketch);
+    });
+  }
+});
+
+/**
+ * `samples/` フォルダの配布用サンプル(.sprsb)を、保存ファイルと同じ形式のまま読み込んで
+ * コード生成する。サンプルが現在のブロック定義で壊れていない(読み込めて、スケッチになる)ことを
+ * 保証するためのテスト。生成した .ino は他のCI用サンプルと同じく `ci-samples/` に書き出すので、
+ * CIの `arduino-cli compile` でも実際にコンパイルされる。
+ *
+ * Arduinoのフォルダ名規約に合わせ、出力先は日本語のファイル名ではなく
+ * 先頭の番号を使った `sample-<番号>` にしている(例: 06_ボタンでLEDをつける.sprsb → sample-06)。
+ */
+const SAMPLES_DIR = join(REPO_ROOT, "samples");
+const SAMPLE_FILES = readdirSync(SAMPLES_DIR)
+  .filter((file) => file.endsWith(".sprsb"))
+  .sort();
+
+describe("samples/ フォルダの配布用サンプル", () => {
+  beforeAll(() => {
+    // 上のdescribeで登録済みなら、二重登録の警告が出ないようにスキップする。
+    if (Blockly.Blocks["spresense_forever"]) {
+      return;
+    }
+    installCoreIoMessages();
+    installCoreIoBlocks();
+    installSensorAddonMessages();
+    installSensorAddonBlocks();
+    installInstrumentMessages();
+    installInstrumentBlocks();
+  });
+
+  it("has at least one sample", () => {
+    expect(SAMPLE_FILES.length).toBeGreaterThan(0);
+  });
+
+  for (const file of SAMPLE_FILES) {
+    it(`loads and generates a sketch for "${file}"`, () => {
+      const project = JSON.parse(readFileSync(join(SAMPLES_DIR, file), "utf-8")) as {
+        schemaVersion: number;
+        boardId: string;
+        workspace: unknown;
+      };
+      expect(project.schemaVersion).toBe(1);
+
+      const workspace = new Blockly.Workspace();
+      Blockly.serialization.workspaces.load(project.workspace as never, workspace);
+      expect(workspace.getAllBlocks(false).length).toBeGreaterThan(1);
+
+      const sketch = generateSketch(workspace, new SketchBuilder());
+      expect(sketch).toContain("void setup()");
+      expect(sketch).toContain("void loop()");
+
+      const id = file.match(/^(\d+)_/)?.[1] ?? file.replace(/\W/g, "");
+      const name = `sample-${id}`;
       const sampleDir = join(OUT_DIR, name);
       mkdirSync(sampleDir, { recursive: true });
       writeFileSync(join(sampleDir, `${name}.ino`), sketch);

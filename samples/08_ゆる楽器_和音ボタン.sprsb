@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_instrument_setup",
+                "id": "b36",
+                "fields": { "VOICE": "Piano" },
+                "next": {
+                  "block": {
+                    "type": "spresense_if",
+                    "id": "b39",
+                    "inputs": {
+                      "CONDITION": {
+                        "block": {
+                          "type": "spresense_digital_read",
+                          "id": "b37",
+                          "fields": { "PIN": "PIN_D04" }
+                        }
+                      },
+                      "DO": {
+                        "block": {
+                          "type": "spresense_instrument_play_chord",
+                          "id": "b38",
+                          "fields": { "NOTE1": "60", "NOTE2": "64", "DURATION_MS": 500, "VOLUME": 100 }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "spresense_if",
+                        "id": "b42",
+                        "inputs": {
+                          "CONDITION": {
+                            "block": {
+                              "type": "spresense_digital_read",
+                              "id": "b40",
+                              "fields": { "PIN": "PIN_D05" }
+                            }
+                          },
+                          "DO": {
+                            "block": {
+                              "type": "spresense_instrument_play_chord",
+                              "id": "b41",
+                              "fields": { "NOTE1": "65", "NOTE2": "69", "DURATION_MS": 500, "VOLUME": 100 }
+                            }
+                          }
+                        },
+                        "next": {
+                          "block": {
+                            "type": "spresense_if",
+                            "id": "b45",
+                            "inputs": {
+                              "CONDITION": {
+                                "block": {
+                                  "type": "spresense_digital_read",
+                                  "id": "b43",
+                                  "fields": { "PIN": "PIN_D06" }
+                                }
+                              },
+                              "DO": {
+                                "block": {
+                                  "type": "spresense_instrument_play_chord",
+                                  "id": "b44",
+                                  "fields": { "NOTE1": "67", "NOTE2": "71", "DURATION_MS": 500, "VOLUME": 100 }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

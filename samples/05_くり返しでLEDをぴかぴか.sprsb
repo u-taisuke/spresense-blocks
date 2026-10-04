@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_repeat_times",
+                "id": "b5",
+                "fields": { "TIMES": 3 },
+                "inputs": {
+                  "DO": {
+                    "block": {
+                      "type": "spresense_onboard_led_set",
+                      "id": "b1",
+                      "fields": { "LED": "LED0", "STATE": "HIGH" },
+                      "next": {
+                        "block": {
+                          "type": "spresense_wait_ms",
+                          "id": "b2",
+                          "fields": { "MS": 100 },
+                          "next": {
+                            "block": {
+                              "type": "spresense_onboard_led_set",
+                              "id": "b3",
+                              "fields": { "LED": "LED0", "STATE": "LOW" },
+                              "next": {
+                                "block": {
+                                  "type": "spresense_wait_ms",
+                                  "id": "b4",
+                                  "fields": { "MS": 100 }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "next": {
+                  "block": {
+                    "type": "spresense_wait_ms",
+                    "id": "b6",
+                    "fields": { "MS": 1000 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
