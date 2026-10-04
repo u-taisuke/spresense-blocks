@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_instrument_setup",
+                "id": "b46",
+                "fields": { "VOICE": "Piano" },
+                "next": {
+                  "block": {
+                    "type": "spresense_variable_set",
+                    "id": "b48",
+                    "fields": { "NAME": "かたむき" },
+                    "inputs": {
+                      "VALUE": {
+                        "block": {
+                          "type": "spresense_sensor_accel",
+                          "id": "b47",
+                          "fields": { "AXIS": "0" }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "spresense_if",
+                        "id": "b53",
+                        "inputs": {
+                          "CONDITION": {
+                            "block": {
+                              "type": "spresense_compare",
+                              "id": "b51",
+                              "fields": { "OP": "GT" },
+                              "inputs": {
+                                "A": {
+                                  "block": {
+                                    "type": "spresense_variable_get",
+                                    "id": "b49",
+                                    "fields": { "NAME": "かたむき" }
+                                  }
+                                },
+                                "B": {
+                                  "block": {
+                                    "type": "spresense_number",
+                                    "id": "b50",
+                                    "fields": { "NUM": 0.5 }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "DO": {
+                            "block": {
+                              "type": "spresense_instrument_play_note",
+                              "id": "b52",
+                              "fields": { "NOTE": "60", "DURATION_MS": 500, "VOLUME": 100 }
+                            }
+                          }
+                        },
+                        "next": {
+                          "block": {
+                            "type": "spresense_if",
+                            "id": "b58",
+                            "inputs": {
+                              "CONDITION": {
+                                "block": {
+                                  "type": "spresense_compare",
+                                  "id": "b56",
+                                  "fields": { "OP": "LT" },
+                                  "inputs": {
+                                    "A": {
+                                      "block": {
+                                        "type": "spresense_variable_get",
+                                        "id": "b54",
+                                        "fields": { "NAME": "かたむき" }
+                                      }
+                                    },
+                                    "B": {
+                                      "block": {
+                                        "type": "spresense_number",
+                                        "id": "b55",
+                                        "fields": { "NUM": -0.5 }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "DO": {
+                                "block": {
+                                  "type": "spresense_instrument_play_note",
+                                  "id": "b57",
+                                  "fields": { "NOTE": "67", "DURATION_MS": 500, "VOLUME": 100 }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

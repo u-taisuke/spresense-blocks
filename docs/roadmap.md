@@ -162,6 +162,16 @@ electron-builderのインストール先フォルダ名(`@spresense-blockseditor
   - `samples/` フォルダに4つの`.sprsb`サンプルを追加(Lチカ、明るさでLED調光、
     ゆる楽器のボタンドラム、傾きセンサーでLED)。すべて実際にアプリの読込→コード生成→
     `arduino-cli compile` まで通ることを確認済み(2026-10-01)
+- [x] サンプル/チュートリアルの拡充
+  - `samples/` に5つ追加(05 くり返しでLEDぴかぴか、06 ボタンでLED、07 温度でLED、
+    08 ゆる楽器の和音ボタン、09 ゆる楽器のかたむき楽器)。計9サンプルになった
+  - チュートリアルに「次のステップ」章(くり返し・変数と条件分岐・センサー・和音)と
+    「やってみよう」を追加
+  - `apps/editor/test/generate-ci-samples.test.ts` が `samples/*.sprsb` を全件読み込み、
+    コード生成までを検証し、CIの `arduino-cli compile` 対象(`ci-samples/sample-<番号>/`)にも加わる
+    (ここまでローカルで確認済み。実機での動作・`arduino-cli compile` はCIおよび実機での確認待ち)
+  - チュートリアルのボタン配線を訂正: 生成コードは `pinMode(INPUT)` + `HIGH` 判定のため、
+    「ピンとGNDの間にボタン」では押しても反応しない。電源側にボタン、GND側にプルダウン抵抗をつなぐ説明に修正
 - [x] 管理者権限なしの学校PCイメージでのパッケージング検証
   - `apps/editor/electron-builder.yml` のnsis設定に `perMachine: false` を明示し、
     UAC昇格を要求しない(`asInvoker`)インストーラーになるようにした
