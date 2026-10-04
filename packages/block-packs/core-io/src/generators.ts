@@ -63,7 +63,9 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
 
   generator.forBlock["spresense_wait_ms"] = (block: Blockly.Block) => {
     const ms = Number(block.getFieldValue("MS"));
-    return `delay(${ms});\n`;
+    // 通常は delay()。ゆる楽器のように「待つ間も続ける処理」があるときは、
+    // その処理を動かしながら待つ spresenseWait() になる(SketchBuilder.waitStatement 参照)。
+    return `${builder.waitStatement(ms)}\n`;
   };
 
   generator.forBlock["spresense_digital_write"] = (block: Blockly.Block) => {

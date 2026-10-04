@@ -25,7 +25,7 @@ describe("instrument generators", () => {
     installBlocks();
   });
 
-  it("setup block declares the table/instance/expiry-check, and runs update()+expiry check every loop", () => {
+  it("setup block declares the table/instance/expiry-check, and runs update()+expiry check as a background task", () => {
     const workspace = new Blockly.Workspace();
     const { generator, builder } = createGeneratorAndBuilder();
     const block = workspace.newBlock("spresense_instrument_setup");
@@ -33,11 +33,15 @@ describe("instrument generators", () => {
 
     const code = generator.forBlock["spresense_instrument_setup"](block, generator) as string;
 
-    expect(code).toContain("spresenseInstrument.update();");
-    expect(code).toContain("for (int i = 0; i < 128; i++)");
-    expect(code).toContain("spresenseInstrument.sendNoteOff(i, DEFAULT_VELOCITY, DEFAULT_CHANNEL);");
+    // ブロック自身は「待つ間も続ける処理」をまとめた関数を呼ぶだけ。
+    expect(code).toBe("spresenseBackgroundUpdate();\n");
+    expect(builder.hasBackgroundTasks()).toBe(true);
 
     const sketch = builder.build();
+    expect(sketch).toContain("void spresenseBackgroundUpdate() {\n  spresenseInstrument.update();");
+    expect(sketch).toContain("for (int i = 0; i < 128; i++)");
+    expect(sketch).toContain("spresenseInstrument.sendNoteOff(i, DEFAULT_VELOCITY, DEFAULT_CHANNEL);");
+    expect(sketch).toContain("void spresenseWait(unsigned long ms) {");
     expect(sketch).toContain('{48, "Piano/48_C3.wav"},');
     expect(sketch).toContain('{71, "Piano/71_B4.wav"},');
     expect(sketch).toContain("SDSink spresenseInstrument(spresenseInstrumentTable, 14);");

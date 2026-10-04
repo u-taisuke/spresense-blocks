@@ -56,7 +56,17 @@ describe("SketchBuilder", () => {
 
     const code = builder.build();
 
-    expect(code.match(/void blinkOnce\(\)/g)).toHaveLength(1);
+    expect(code.match(/void blinkOnce\(\) \{/g)).toHaveLength(1);
+  });
+
+  it("emits a forward declaration for each function before setup()", () => {
+    const builder = new SketchBuilder();
+    builder.addFunction("readAxis", "float readAxis(int axis) {\n  return axis;\n}");
+
+    const code = builder.build();
+
+    expect(code).toContain("float readAxis(int axis);\n\nvoid setup() {");
+    expect(code.indexOf("float readAxis(int axis);")).toBeLessThan(code.indexOf("void loop() {"));
   });
 
   it("reset() clears all accumulated state", () => {
@@ -77,5 +87,41 @@ describe("SketchBuilder", () => {
     expect(code).not.toContain("void f()");
     expect(code).toContain("void setup() {\n\n}");
     expect(code).toContain("void loop() {\n\n}");
+  });
+  it("uses delay() for waits unless cooperative waiting is enabled", () => {
+    const builder = new SketchBuilder();
+    expect(builder.waitStatement(300)).toBe("delay(300);");
+    builder.setCooperativeWait(true);
+    expect(builder.waitStatement(300)).toBe("spresenseWait(300);");
+    builder.reset();
+    expect(builder.waitStatement(300)).toBe("delay(300);");
+  });
+
+  it("emits background-task helpers only when a background task is registered", () => {
+    const builder = new SketchBuilder();
+    expect(builder.hasBackgroundTasks()).toBe(false);
+    expect(builder.build()).not.toContain("spresenseBackgroundUpdate");
+
+    builder.addBackgroundTask("task-a", "doA();");
+    builder.addBackgroundTask("task-a", "doA();");
+    builder.addBackgroundTask("task-b", "doB();");
+    const code = builder.build();
+
+    expect(builder.hasBackgroundTasks()).toBe(true);
+    expect(code).toContain("void spresenseBackgroundUpdate() {\n  doA();\n  doB();\n}");
+    // 待ち時間が過ぎた後にもう1回呼び、ちょうど時間切れになった処理(音を止める等)を取りこぼさない。
+    expect(code).toContain(
+      "void spresenseWait(unsigned long ms) {\n" +
+        "  unsigned long start = millis();\n" +
+        "  while (millis() - start < ms) {\n" +
+        "    spresenseBackgroundUpdate();\n" +
+        "  }\n" +
+        "  spresenseBackgroundUpdate();\n" +
+        "}"
+    );
+    expect(code.match(/doA\(\);/g)).toHaveLength(1);
+
+    builder.reset();
+    expect(builder.hasBackgroundTasks()).toBe(false);
   });
 });

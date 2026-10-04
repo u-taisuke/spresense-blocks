@@ -327,6 +327,12 @@ describe("samples/ フォルダの配布用サンプル", () => {
       expect(sketch).toContain("void setup()");
       expect(sketch).toContain("void loop()");
 
+      // ゆる楽器を使うサンプルでは、「待つ」が音のデータの読み足しを止めてしまう delay() ではなく、
+      // 読み足しを続けながら待つ spresenseWait() になっていること(delay()だと音が途切れ、雑音が出る)。
+      if (sketch.includes("SDSink")) {
+        expect(sketch).not.toMatch(/\bdelay\(/);
+      }
+
       const id = file.match(/^(\d+)_/)?.[1] ?? file.replace(/\W/g, "");
       const name = `sample-${id}`;
       const sampleDir = join(OUT_DIR, name);
