@@ -27,6 +27,7 @@ packages/block-packs/instrument/src/generators.ts の NOTE_TABLE と完全に一
 import math
 import os
 import struct
+import sys
 import wave
 
 SAMPLE_RATE = 48000
@@ -127,6 +128,114 @@ def synth_sax(freq: float, duration: float) -> list:
     return samples
 
 
+def synth_organ(freq: float, duration: float) -> list:
+    """
+    オルガン風の音を合成する: パイプオルガン/電子オルガンの「ドローバー」のように、
+    1オクターブ下〜3オクターブ上の倍音を一定の音量で重ねた持続音。音量は減衰させず、
+    ゆっくりした音量の揺れ(トレモロ)を少しだけ加える。
+    """
+    n_samples = int(SAMPLE_RATE * duration)
+    samples = [0.0] * n_samples
+    # (基音に対する倍率, 音量)。0.5 は1オクターブ下、2/4/8 はオクターブ上、3/6 は5度上の倍音。
+    drawbars = [(0.5, 0.45), (1.0, 1.0), (2.0, 0.7), (3.0, 0.4), (4.0, 0.35), (6.0, 0.15), (8.0, 0.12)]
+    tremolo_rate = 6.0  # Hz
+    tremolo_depth = 0.04
+
+    attack_samples = int(SAMPLE_RATE * 0.01)  # 10msのアタック(クリックノイズ防止)
+    release_samples = int(SAMPLE_RATE * 0.06)  # 60msのリリース
+
+    for i in range(n_samples):
+        t = i / SAMPLE_RATE
+        value = 0.0
+        for ratio, amp in drawbars:
+            value += amp * math.sin(2.0 * math.pi * freq * ratio * t)
+        value *= 1.0 - tremolo_depth * (1.0 + math.sin(2.0 * math.pi * tremolo_rate * t)) / 2.0
+
+        if i < attack_samples:
+            value *= i / attack_samples
+        elif i > n_samples - release_samples:
+            value *= (n_samples - i) / release_samples
+
+        samples[i] = value
+
+    return samples
+
+
+def synth_glockenspiel(freq: float, duration: float) -> list:
+    """
+    鉄琴(グロッケンシュピール)風の音を合成する: 金属の棒を叩いたときの、整数倍ではない
+    倍音(棒の振動モード。基音の約2.76倍・5.40倍・8.93倍)を重ね、高い倍音ほど早く減衰させる。
+    叩いた瞬間にすぐ鳴り始めるよう、アタックはごく短くする。
+    """
+    n_samples = int(SAMPLE_RATE * duration)
+    samples = [0.0] * n_samples
+    # (基音に対する倍率, 音量, 減衰の時定数[秒])
+    partials = [(1.0, 1.0, 0.9), (2.76, 0.45, 0.35), (5.40, 0.25, 0.15), (8.93, 0.12, 0.08)]
+
+    attack_samples = int(SAMPLE_RATE * 0.001)  # 1msのアタック
+
+    for i in range(n_samples):
+        t = i / SAMPLE_RATE
+        value = 0.0
+        for ratio, amp, tau in partials:
+            partial_freq = freq * ratio
+            if partial_freq >= SAMPLE_RATE / 2:
+                continue  # ナイキスト周波数を超える倍音は折り返し雑音になるので入れない
+            value += amp * math.exp(-t / tau) * math.sin(2.0 * math.pi * partial_freq * t)
+        if i < attack_samples:
+            value *= i / attack_samples
+        samples[i] = value
+
+    return samples
+
+
+def _poly_blep(phase: float, phase_inc: float) -> float:
+    """
+    PolyBLEP: 矩形波の角(不連続点)の前後だけをなめらかに補正し、折り返し雑音(エイリアシング)を
+    減らす手法。phase は 0〜1 の位相、phase_inc は1サンプルあたりの位相の進み。
+    """
+    if phase < phase_inc:
+        x = phase / phase_inc
+        return x + x - x * x - 1.0
+    if phase > 1.0 - phase_inc:
+        x = (phase - 1.0) / phase_inc
+        return x * x + x + x + 1.0
+    return 0.0
+
+
+def synth_chiptune(freq: float, duration: float) -> list:
+    """
+    8ビット(昔のゲーム機風)の音を合成する: ゲーム機の音源チップでよく使われた、
+    デューティ比25%の矩形波(パルス波)。PolyBLEPで角をなめらかにして、高い音での
+    「ジリジリ」した折り返し雑音を抑える。音量はほぼ一定で、末尾だけ短くフェードアウトする。
+    """
+    n_samples = int(SAMPLE_RATE * duration)
+    samples = [0.0] * n_samples
+    duty = 0.25
+    phase_inc = freq / SAMPLE_RATE
+    phase = 0.0
+
+    attack_samples = int(SAMPLE_RATE * 0.003)  # 3msのアタック(クリックノイズ防止)
+    release_samples = int(SAMPLE_RATE * 0.04)  # 40msのリリース
+
+    for i in range(n_samples):
+        value = 1.0 if phase < duty else -1.0
+        value += _poly_blep(phase, phase_inc)  # 立ち上がりの角
+        value -= _poly_blep((phase - duty) % 1.0, phase_inc)  # 立ち下がりの角
+        # 少しだけ音量を下げていき、のっぺりしすぎないようにする。
+        value *= 1.0 - 0.25 * (i / n_samples)
+
+        if i < attack_samples:
+            value *= i / attack_samples
+        elif i > n_samples - release_samples:
+            value *= (n_samples - i) / release_samples
+
+        samples[i] = value
+        phase = (phase + phase_inc) % 1.0
+
+    return samples
+
+
 def normalize(samples: list, peak: float = 0.85) -> list:
     max_abs = max((abs(s) for s in samples), default=0.0)
     if max_abs < 1e-9:
@@ -151,15 +260,27 @@ def write_wav(path: str, samples: list) -> None:
 
 
 def main() -> None:
+    # 音色名(=SDカード上のフォルダ名): (合成関数, 長さ[秒], 最大音量)。
+    # フォルダ名はSDカード(FAT)でも確実に扱えるよう、8文字以内の英数字にしている。
+    # apps/editor/src/main/sdcard.ts の AVAILABLE_VOICES、blocks.ts の VOICE_OPTIONS と一致させること。
+    # 最大音量は、音色ごとの聞こえ方の大きさが揃うように調整している(矩形波の8ビットは、
+    # 同じ振幅でも大きく聞こえるので低めにしている)。
     voices = {
-        "Piano": (synth_piano, 1.2),
-        "Sax": (synth_sax, 1.2),
+        "Piano": (synth_piano, 1.2, 0.85),
+        "Sax": (synth_sax, 1.2, 0.85),
+        "Organ": (synth_organ, 1.2, 0.75),
+        "Glock": (synth_glockenspiel, 1.2, 0.85),
+        "Chip": (synth_chiptune, 1.2, 0.4),
     }
-    for voice_name, (synth_fn, duration) in voices.items():
+    # 引数で音色名を指定すると、その音色だけを作り直す(例: python generate-sound-assets.py Organ)。
+    selected = set(sys.argv[1:]) or set(voices)
+    for voice_name, (synth_fn, duration, peak) in voices.items():
+        if voice_name not in selected:
+            continue
         for note_number, suffix in NOTES.items():
             freq = note_to_freq(note_number)
             samples = synth_fn(freq, duration)
-            samples = normalize(samples)
+            samples = normalize(samples, peak)
             out_path = os.path.join(OUTPUT_ROOT, voice_name, f"{suffix}.wav")
             write_wav(out_path, samples)
             print(f"wrote {out_path} ({freq:.1f} Hz)")

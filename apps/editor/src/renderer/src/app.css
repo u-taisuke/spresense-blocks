@@ -815,8 +815,9 @@ input:focus-visible {
 }
 
 .voice-options {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
 .voice-option {

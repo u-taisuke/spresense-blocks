@@ -85,7 +85,7 @@ function buildPlayCode(notes: string[], durationMs: number, volume: number): str
  */
 export function registerGenerators(generator: Blockly.Generator, builder: SketchBuilder): void {
   generator.forBlock["spresense_instrument_setup"] = (block: Blockly.Block) => {
-    // "Piano" / "Sax"。apps/editor/resources/instrument-sounds/<voice>/ に対応する
+    // "Piano" / "Sax" / "Organ" / "Glock" / "Chip"。apps/editor/resources/instrument-sounds/<voice>/ に対応する
     // フォルダ名で、アプリの「SDカードに音源をコピー」機能が同じ名前でSDカードに複製する。
     const voice = block.getFieldValue("VOICE") as string;
 

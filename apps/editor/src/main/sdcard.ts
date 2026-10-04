@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
  * packages/block-packs/instrument/tools/generate-sound-assets.py で生成したもの。
  * ここでの並び・名前は packages/block-packs/instrument/src/blocks.ts の VOICE_OPTIONS と一致させること。
  */
-export const AVAILABLE_VOICES = ["Piano", "Sax"] as const;
+export const AVAILABLE_VOICES = ["Piano", "Sax", "Organ", "Glock", "Chip"] as const;
 export type VoiceName = (typeof AVAILABLE_VOICES)[number];
 
 export interface RemovableDrive {

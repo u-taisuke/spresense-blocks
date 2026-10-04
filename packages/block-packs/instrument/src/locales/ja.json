@@ -4,6 +4,9 @@
 
   "SPRESENSE_INSTRUMENT_VOICE_PIANO": "ピアノ",
   "SPRESENSE_INSTRUMENT_VOICE_SAX": "サックス",
+  "SPRESENSE_INSTRUMENT_VOICE_ORGAN": "オルガン",
+  "SPRESENSE_INSTRUMENT_VOICE_GLOCK": "鉄琴",
+  "SPRESENSE_INSTRUMENT_VOICE_CHIP": "8ビット",
 
   "SPRESENSE_INSTRUMENT_PLAY_NOTE": "%1 の音を、長さ %2 ミリ秒、大きさ %3 で鳴らす",
   "SPRESENSE_INSTRUMENT_PLAY_NOTE_TOOLTIP": "選んだ音の高さを、指定した長さ(ミリ秒。1000ミリ秒=1秒)と大きさ(0〜100、100が元の音量)で鳴らします。音源の元の長さ(約1.2秒)より長くは鳴らせません。「大きさ」は今鳴っている他の音にも影響します(全ての音をまとめて鳴らす1つの音量つまみのため)。メロディにしたい場合は、「待つ」ブロックと交互に並べます(音の長さと待つ時間を同じにすると、音が順番に鳴ります)。ボタンが押されたときに鳴らしたい場合は、センシングの「デジタルピンがONになっている」ブロックと「もし〜なら」ブロックを組み合わせてください。「ゆる楽器を鳴らす」ブロックと組み合わせて、「ずっと」の中で使います。",

@@ -18,6 +18,9 @@ interface RemovableDrive {
 const VOICE_LABELS: Record<string, string> = {
   Piano: "ピアノ",
   Sax: "サックス",
+  Organ: "オルガン",
+  Glock: "鉄琴",
+  Chip: "8ビット",
 };
 
 function formatGiB(bytes: number): string {
@@ -130,7 +133,7 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
           </button>
         </div>
         <p className="modal-note">
-          「ゆる楽器」ブロックで使う音(ピアノ・サックス)は、SPRESENSEのmicroSDカードに
+          「ゆる楽器」ブロックで使う音(ピアノ・サックス・オルガン・鉄琴・8ビット)は、SPRESENSEのmicroSDカードに
           前もってコピーしておく必要があります。SDカードを一度SPRESENSEから取り外し、
           PC本体やUSBカードリーダーに挿してから、下のボタンでコピーしてください。
         </p>
