@@ -11,6 +11,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
     "dist:win": "npm run build && electron-builder --win",
     "generate:ci-samples": "vitest run test/generate-ci-samples.test.ts"
   },
@@ -31,6 +32,7 @@
     "electron-vite": "^2.3.0",
     "highlight.js": "^11.12.0",
     "jsdom": "^25.0.1",
+    "marked": "^18.0.14",
     "playwright-core": "^1.63.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

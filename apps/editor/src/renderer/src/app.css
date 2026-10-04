@@ -157,7 +157,7 @@ input:focus-visible {
 
 .file-chip {
   display: inline-flex;
-  min-width: 0;
+  min-width: 140px;
   flex-shrink: 1;
   align-items: center;
   gap: 6px;
@@ -250,6 +250,13 @@ input:focus-visible {
   background: #f8a56b;
   cursor: default;
   box-shadow: none;
+}
+
+/* 横幅が少し狭い画面では、ロゴの文字を隠して、開いているファイル名の表示幅を確保する。 */
+@media (max-width: 1500px) {
+  .brand-name {
+    display: none;
+  }
 }
 
 /* 横幅が狭い画面(ノートPC等)では、補助ボタンをアイコンだけにする(説明はマウスを乗せると出る)。 */
@@ -871,4 +878,362 @@ input:focus-visible {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 24px;
+}
+
+/* ───────── サンプル・使い方(LearnPanel) ───────── */
+
+.modal-icon.is-learn {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.learn-panel {
+  width: 760px;
+}
+
+.tutorial-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid #c5d3ff;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tutorial-card:hover {
+  background: #e1e9ff;
+  border-color: var(--color-primary);
+}
+
+.tutorial-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: white;
+}
+
+.tutorial-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tutorial-card-text strong {
+  font-size: 0.98rem;
+}
+
+.tutorial-card-text span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.learn-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.learn-section-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.filter-chip.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.sample-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sample-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sample-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.sample-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.sample-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sample-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sample-title {
+  font-size: 0.95rem;
+}
+
+.sample-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sample-tag.is-basic {
+  background: #fff4e6;
+  color: #d9480f;
+}
+
+.sample-tag.is-sensor {
+  background: #e3fafc;
+  color: #0b7285;
+}
+
+.sample-tag.is-instrument {
+  background: #f8f0fc;
+  color: #9c36b5;
+}
+
+.sample-description {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.sample-hardware {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 0.8rem;
+}
+
+.sample-open {
+  flex-shrink: 0;
+}
+
+/* ───────── チュートリアル(TutorialView) ───────── */
+
+.tutorial-view {
+  display: flex;
+  flex-direction: column;
+  width: 1040px;
+  max-width: 94vw;
+  height: 88vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tutorial-header {
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tutorial-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tutorial-toc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 240px;
+  flex-shrink: 0;
+  padding: 16px 12px;
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+  background: #fafbfd;
+}
+
+.tutorial-toc-title {
+  margin: 0 8px 8px;
+  color: var(--color-text-subtle);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.tutorial-toc-item {
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tutorial-toc-item:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.tutorial-toc-item.is-level-3 {
+  padding-left: 20px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.tutorial-content {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 36px 40px;
+  overflow-y: auto;
+}
+
+/* チュートリアル本文(Markdownから変換したHTML)の文字組み。 */
+.markdown-body {
+  max-width: 760px;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.85;
+}
+
+.markdown-body h1 {
+  margin: 24px 0 12px;
+  font-size: 1.6rem;
+}
+
+.markdown-body h2 {
+  margin: 36px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--color-primary-soft);
+  font-size: 1.3rem;
+  scroll-margin-top: 16px;
+}
+
+.markdown-body h3 {
+  margin: 28px 0 8px;
+  font-size: 1.08rem;
+  scroll-margin-top: 16px;
+}
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol {
+  margin: 10px 0;
+}
+
+.markdown-body li {
+  margin: 4px 0;
+}
+
+.markdown-body a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.markdown-body code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.markdown-body pre {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  overflow-x: auto;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background: none;
+}
+
+.markdown-body table {
+  width: 100%;
+  margin: 14px 0;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body th {
+  background: #fafbfd;
+}
+
+.markdown-body strong {
+  color: #111827;
 }
