@@ -18,6 +18,7 @@ import {
 } from "@spresense-blocks/block-pack-instrument";
 import { SketchBuilder } from "@spresense-blocks/codegen-core";
 import { generateSketch } from "./codegen";
+import { installTabNavigation } from "./tabNavigation";
 
 Blockly.setLocale(jaLocale as unknown as { [key: string]: string });
 // 新しいブロックパックを追加したら、ここに installXxxMessages()/installXxxBlocks() を足していく
@@ -137,11 +138,15 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
         regenerate();
       }
 
+      // ブロックの入力欄(数字・文字・ドロップダウン)を Tab / Shift+Tab で順番に移れるようにする。
+      const uninstallTabNavigation = installTabNavigation(workspace, container);
+
       const handleResize = (): void => Blockly.svgResize(workspace);
       window.addEventListener("resize", handleResize);
 
       return () => {
         window.removeEventListener("resize", handleResize);
+        uninstallTabNavigation();
         workspace.removeChangeListener(regenerate);
         workspace.dispose();
         workspaceRef.current = null;
