@@ -12,9 +12,10 @@ export function SetupScreen({ message, error, onRetry }: SetupScreenProps): Reac
   return (
     <div className="setup-screen">
       <div className="setup-card">
+        <span className="brand-mark is-large" aria-hidden="true" />
         <h1>Spresense Blocks を準備しています</h1>
         <p className="setup-note">
-          はじめて起動したときだけ、プログラムを書き込むための道具(arduino-cli と
+          初めて起動したときだけ、プログラムを書き込むための道具(arduino-cli と
           SPRESENSEのボード情報)をダウンロードします。数分かかることがあります。
         </p>
 
@@ -33,7 +34,7 @@ export function SetupScreen({ message, error, onRetry }: SetupScreenProps): Reac
               学校のネットワークがプロキシやファイアウォールで外部通信をブロックしている可能性があります。
               ネットワーク環境をご確認のうえ、もう一度お試しください。
             </p>
-            <button type="button" className="primary" onClick={onRetry}>
+            <button type="button" className="primary-button" onClick={onRetry}>
               もう一度試す
             </button>
           </div>

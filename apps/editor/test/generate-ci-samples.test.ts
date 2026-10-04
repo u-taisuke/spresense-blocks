@@ -285,7 +285,7 @@ describe("CI用サンプルプロジェクトの生成", () => {
  * CIの `arduino-cli compile` でも実際にコンパイルされる。
  *
  * Arduinoのフォルダ名規約に合わせ、出力先は日本語のファイル名ではなく
- * 先頭の番号を使った `sample-<番号>` にしている(例: 06_ボタンでLEDをつける.sprsb → sample-06)。
+ * 先頭の番号を使った `sample-<番号>` にしている(例: 06_ボタンでLEDを点ける.sprsb → sample-06)。
  */
 const SAMPLES_DIR = join(REPO_ROOT, "samples");
 const SAMPLE_FILES = readdirSync(SAMPLES_DIR)

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Icon } from "./Icon";
 
 export interface SdCardPanelProps {
   onClose: () => void;
@@ -49,7 +50,7 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
       setDrives(found);
       setSelectedDrive((prev) => (found.some((d) => d.driveLetter === prev) ? prev : (found[0]?.driveLetter ?? "")));
       if (found.length === 0) {
-        setMessage("リムーバブルディスクが見つかりません。SDカードをPCに挿してから「さがす」を押してください。");
+        setMessage("リムーバブルディスクが見つかりません。SDカードをPCに挿してから「探す」を押してください。");
       }
     } catch (error) {
       setMessage(`ドライブの取得に失敗しました: ${String(error)}`);
@@ -57,6 +58,16 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
       setIsScanning(false);
     }
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     window.spresense.listAvailableVoices().then((voices) => {
@@ -102,19 +113,36 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2>SDカードに音源をコピー</h2>
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sd-card-panel-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <span className="modal-icon" aria-hidden="true">
+            <Icon name="music" size={20} />
+          </span>
+          <h2 id="sd-card-panel-title">SDカードに音源をコピー</h2>
+          <button type="button" className="modal-close" onClick={onClose} title="閉じる">
+            <Icon name="close" />
+          </button>
+        </div>
         <p className="modal-note">
           「ゆる楽器」ブロックで使う音(ピアノ・サックス)は、SPRESENSEのmicroSDカードに
-          あらかじめコピーしておく必要があります。SDカードを一度SPRESENSEから取り外し、
+          前もってコピーしておく必要があります。SDカードを一度SPRESENSEから取り外し、
           PC本体やUSBカードリーダーに挿してから、下のボタンでコピーしてください。
         </p>
 
         <section className="modal-section">
-          <h3>1. コピーする音色を選ぶ</h3>
+          <h3>
+            <span className="step-number">1</span>コピーする音色を選ぶ
+          </h3>
           {availableVoices.length === 0 && <p className="modal-status">利用できる音色がありません。</p>}
+          <div className="voice-options">
           {availableVoices.map((voice) => (
-            <label key={voice} className="modal-checkbox">
+            <label key={voice} className={`voice-option${selectedVoices.has(voice) ? " is-checked" : ""}`}>
               <input
                 type="checkbox"
                 checked={selectedVoices.has(voice)}
@@ -123,10 +151,13 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
               {VOICE_LABELS[voice] ?? voice}
             </label>
           ))}
+          </div>
         </section>
 
         <section className="modal-section">
-          <h3>2. コピー先のドライブを選ぶ</h3>
+          <h3>
+            <span className="step-number">2</span>コピー先のドライブを選ぶ
+          </h3>
           <div className="modal-row">
             <select
               value={selectedDrive}
@@ -140,8 +171,9 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
                 </option>
               ))}
             </select>
-            <button type="button" onClick={scanDrives} disabled={isScanning}>
-              {isScanning ? "さがしています..." : "さがす"}
+            <button type="button" className="secondary-button" onClick={scanDrives} disabled={isScanning}>
+              <Icon name="refresh" size={16} />
+              {isScanning ? "探しています…" : "探す"}
             </button>
           </div>
         </section>
@@ -149,16 +181,16 @@ export function SdCardPanel({ onClose }: SdCardPanelProps): React.JSX.Element {
         {message && <p className="modal-status">{message}</p>}
 
         <div className="modal-actions">
-          <button type="button" onClick={onClose}>
+          <button type="button" className="secondary-button" onClick={onClose}>
             閉じる
           </button>
           <button
             type="button"
-            className="primary"
+            className="primary-button"
             onClick={handleCopy}
             disabled={isCopying || !selectedDrive || selectedVoices.size === 0}
           >
-            {isCopying ? "コピー中..." : "コピーする"}
+            {isCopying ? "コピー中…" : "コピーする"}
           </button>
         </div>
       </div>

@@ -2,14 +2,14 @@
   "SPRESENSE_COREIO_FOREVER": "ずっと %1",
   "SPRESENSE_COREIO_FOREVER_TOOLTIP": "中に入れたブロックを、プログラムが終わるまで繰り返し実行します。",
   "SPRESENSE_COREIO_LED_SET": "オンボードLED %1 を %2 にする",
-  "SPRESENSE_COREIO_LED_SET_TOOLTIP": "基板についているLEDのオン・オフを切りかえます。",
+  "SPRESENSE_COREIO_LED_SET_TOOLTIP": "基板についているLEDのオン・オフを切り替えます。",
   "SPRESENSE_COREIO_ON": "点ける",
   "SPRESENSE_COREIO_OFF": "消す",
   "SPRESENSE_COREIO_WAIT_MS": "%1 ミリ秒待つ",
   "SPRESENSE_COREIO_WAIT_MS_TOOLTIP": "指定した時間(ミリ秒)だけ次のブロックに進むのを待ちます。1000ミリ秒 = 1秒です。",
 
   "SPRESENSE_COREIO_DIGITAL_WRITE": "デジタルピン %1 を %2 にする",
-  "SPRESENSE_COREIO_DIGITAL_WRITE_TOOLTIP": "指定したピンの電圧を高い(ON)か低い(OFF)かに切りかえます。",
+  "SPRESENSE_COREIO_DIGITAL_WRITE_TOOLTIP": "指定したピンの電圧を高い(ON)か低い(OFF)かに切り替えます。",
   "SPRESENSE_COREIO_DIGITAL_HIGH": "ON",
   "SPRESENSE_COREIO_DIGITAL_LOW": "OFF",
 
@@ -22,8 +22,8 @@
   "SPRESENSE_COREIO_PWM_WRITE": "ピン %1 のPWM出力を %2 にする(0〜255)",
   "SPRESENSE_COREIO_PWM_WRITE_TOOLTIP": "LEDの明るさやモーターの速さなどを、0(弱い)〜255(強い)の間で調整します。",
 
-  "SPRESENSE_COREIO_REPEAT_TIMES": "%1 回くり返す %2",
-  "SPRESENSE_COREIO_REPEAT_TIMES_TOOLTIP": "中に入れたブロックを、指定した回数だけくり返します。",
+  "SPRESENSE_COREIO_REPEAT_TIMES": "%1 回繰り返す %2",
+  "SPRESENSE_COREIO_REPEAT_TIMES_TOOLTIP": "中に入れたブロックを、指定した回数だけ繰り返します。",
 
   "SPRESENSE_COREIO_IF": "もし %1 なら %2",
   "SPRESENSE_COREIO_IF_TOOLTIP": "条件が正しい(true)ときだけ、中のブロックを実行します。",
