@@ -1,7 +1,7 @@
 {
   "name": "@spresense-blocks/editor",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "SPRESENSE をブロックでプログラミングできるデスクトップアプリ",
   "author": "Taisuke Utsumi",
   "type": "module",
