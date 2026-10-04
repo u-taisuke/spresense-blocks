@@ -7,9 +7,13 @@ name: Release
 #   1. apps/editor/package.json の version を上げる(タグと一致していないとこのワークフローは失敗する)
 #   2. docs/release-notes/v1.2.3.md を書く
 #   3. master に反映してから `git tag -a v1.2.3 -m ... && git push origin v1.2.3`
+#      (タグをプッシュできない環境では、GitHubの Actions タブからこのワークフローを
+#       「Run workflow」で master に対して手動実行してもよい。その場合はバージョンからタグ名を決め、
+#       リリースの公開と同時にタグも作成する)
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -25,18 +29,30 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Check that the tag matches the app version and release notes exist
+      - name: Decide the release tag and check the release notes
+        id: tag
         shell: bash
         run: |
           version="v$(node -p "require('./apps/editor/package.json').version")"
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::タグ($GITHUB_REF_NAME)と apps/editor/package.json の version($version)が一致しません"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tag="$GITHUB_REF_NAME"
+            if [ "$version" != "$tag" ]; then
+              echo "::error::タグ($tag)と apps/editor/package.json の version($version)が一致しません"
+              exit 1
+            fi
+          else
+            # 手動実行(workflow_dispatch)のときは、バージョンからタグ名を決める。
+            tag="$version"
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+              echo "::error::タグ $tag は既にあります。apps/editor/package.json の version を上げてください"
+              exit 1
+            fi
+          fi
+          if [ ! -f "docs/release-notes/$tag.md" ]; then
+            echo "::error::docs/release-notes/$tag.md がありません"
             exit 1
           fi
-          if [ ! -f "docs/release-notes/$GITHUB_REF_NAME.md" ]; then
-            echo "::error::docs/release-notes/$GITHUB_REF_NAME.md がありません"
-            exit 1
-          fi
+          echo "name=$tag" >> "$GITHUB_OUTPUT"
 
       - run: npm ci
       - run: npm run typecheck
@@ -56,7 +72,10 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          name: Spresense Blocks ${{ github.ref_name }}
-          body_path: docs/release-notes/${{ github.ref_name }}.md
+          # 手動実行のときは、ここで tag_name のタグを(ビルドしたコミットに)新しく作成する。
+          tag_name: ${{ steps.tag.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          name: Spresense Blocks ${{ steps.tag.outputs.name }}
+          body_path: docs/release-notes/${{ steps.tag.outputs.name }}.md
           files: apps/editor/release/*.exe
           fail_on_unmatched_files: true
