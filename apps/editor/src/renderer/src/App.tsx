@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from "./BlocklyWorkspace";
 import { CodeView } from "./CodeView";
 import { Icon } from "./Icon";
+import { LearnPanel } from "./LearnPanel";
+import { TutorialView } from "./TutorialView";
 import { PortSelect } from "./PortSelect";
 import { SdCardPanel } from "./SdCardPanel";
 import { SetupScreen } from "./SetupScreen";
@@ -71,10 +73,19 @@ function Editor(): React.JSX.Element {
   const [log, setLog] = useState("");
   const [busy, setBusy] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  // サンプルを開いたときなど、まだファイルに保存していないプログラムの表示名(例: 「サンプル: Lチカ」)。
+  const [untitledLabel, setUntitledLabel] = useState("名前未設定");
   const [sdCardPanelOpen, setSdCardPanelOpen] = useState(false);
+  const [learnPanelOpen, setLearnPanelOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>("log");
   const [buildStatus, setBuildStatus] = useState<BuildStatus>({ kind: "idle" });
   const blocklyRef = useRef<BlocklyWorkspaceHandle>(null);
+  // 「保存していない変更があるか」を、生成されるC++コードが最後に保存・読込したときから
+  // 変わったかどうかで判断する(ブロックの位置を動かしただけの変更は対象外になるが、
+  // 別のプログラムを開く前の確認としては十分)。
+  const codeRef = useRef("");
+  const savedCodeRef = useRef<string | null>(null);
   const busyRef = useRef(busy);
   const previousPortIdsRef = useRef<string[]>([]);
   // 「検索中に、もう一度検索が呼ばれる」状況(React StrictModeでの二重初期化、
@@ -183,6 +194,27 @@ function Editor(): React.JSX.Element {
     };
   }, [refreshPorts]);
 
+  const handleCodeChange = useCallback((nextCode: string) => {
+    codeRef.current = nextCode;
+    if (savedCodeRef.current === null) {
+      // 起動直後の(「ずっと」だけが置いてある)状態を、変更なしの基準にする。
+      savedCodeRef.current = nextCode;
+    }
+    setCode(nextCode);
+  }, []);
+
+  const markSaved = (): void => {
+    savedCodeRef.current = codeRef.current;
+  };
+
+  /** 保存していない変更があれば、別のプログラムに置き換えてよいか確認する。 */
+  const confirmDiscardChanges = (): boolean => {
+    if (savedCodeRef.current === null || codeRef.current === savedCodeRef.current) {
+      return true;
+    }
+    return window.confirm("今のプログラムは保存されていません。開くと、今のプログラムは消えてしまいます。\n開いてもよいですか？");
+  };
+
   const handleSave = useCallback(async () => {
     const state = blocklyRef.current?.getState();
     if (!state) {
@@ -197,6 +229,7 @@ function Editor(): React.JSX.Element {
       const savedPath = await window.spresense.saveProject(project, currentFilePath);
       if (savedPath) {
         setCurrentFilePath(savedPath);
+        markSaved();
         setLog((prev) => `${prev}\n保存しました: ${savedPath}\n`);
       }
     } catch (error) {
@@ -205,6 +238,9 @@ function Editor(): React.JSX.Element {
   }, [currentFilePath]);
 
   const handleOpen = useCallback(async () => {
+    if (!confirmDiscardChanges()) {
+      return;
+    }
     try {
       const result = await window.spresense.openProject();
       if (!result) {
@@ -212,11 +248,64 @@ function Editor(): React.JSX.Element {
       }
       const project = result.data as ProjectFile;
       blocklyRef.current?.loadState(project.workspace);
+      markSaved();
       setCurrentFilePath(result.path);
       setLog((prev) => `${prev}\n開きました: ${result.path}\n`);
     } catch (error) {
       setLog((prev) => `${prev}\n開けませんでした: ${String(error)}\n`);
     }
+  }, []);
+
+  const handleOpenSample = useCallback(async (file: string) => {
+    if (!confirmDiscardChanges()) {
+      return;
+    }
+    try {
+      const result = await window.spresense.openSample(file);
+      const project = result.data as ProjectFile;
+      blocklyRef.current?.loadState(project.workspace);
+      markSaved();
+      // 同梱のサンプルファイル自体を上書きしないよう、保存先は未定(保存時にダイアログを出す)にする。
+      setCurrentFilePath(null);
+      setUntitledLabel(`サンプル: ${result.info.title}`);
+      setLearnPanelOpen(false);
+      setTutorialOpen(false);
+      setLog((prev) => `${prev}\nサンプル「${result.info.title}」を開きました。必要なもの: ${result.info.hardware}\n`);
+    } catch (error) {
+      setLog((prev) => `${prev}\nサンプルを開けませんでした: ${String(error)}\n`);
+    }
+  }, []);
+
+  // メニューバーの項目は、ツールバーのボタンと同じ処理を呼ぶ。
+  // 最新の handleSave(保存先を覚えている)を使うため、ref経由で呼び出す。
+  const menuHandlersRef = useRef({ handleOpen, handleSave, handleOpenSample, toggleCodeTab });
+  menuHandlersRef.current = { handleOpen, handleSave, handleOpenSample, toggleCodeTab };
+  useEffect(() => {
+    return window.spresense.onMenuAction((action) => {
+      const handlers = menuHandlersRef.current;
+      switch (action.type) {
+        case "open":
+          handlers.handleOpen();
+          break;
+        case "save":
+          handlers.handleSave();
+          break;
+        case "openSample":
+          handlers.handleOpenSample(action.file);
+          break;
+        case "showSamples":
+          setTutorialOpen(false);
+          setLearnPanelOpen(true);
+          break;
+        case "showTutorial":
+          setLearnPanelOpen(false);
+          setTutorialOpen(true);
+          break;
+        case "toggleCode":
+          handlers.toggleCodeTab();
+          break;
+      }
+    });
   }, []);
 
   const handleBuild = useCallback(async () => {
@@ -246,7 +335,7 @@ function Editor(): React.JSX.Element {
     }
   }, [code, selectedPort]);
 
-  const fileName = currentFilePath?.split(/[/\\]/).pop() ?? "名前未設定";
+  const fileName = currentFilePath?.split(/[/\\]/).pop() ?? untitledLabel;
 
   return (
     <div className="app">
@@ -255,7 +344,7 @@ function Editor(): React.JSX.Element {
           <span className="brand-mark" aria-hidden="true" />
           <span className="brand-name">Spresense Blocks</span>
         </div>
-        <span className="file-chip" title={currentFilePath ?? "まだ保存していません"}>
+        <span className="file-chip" title={currentFilePath ?? `${fileName}(まだ保存していません)`}>
           <Icon name="file" size={14} />
           <span className="file-chip-name">{fileName}</span>
         </span>
@@ -300,6 +389,15 @@ function Editor(): React.JSX.Element {
           <button
             type="button"
             className="tool-button"
+            onClick={() => setLearnPanelOpen(true)}
+            title="サンプルプログラムを開いたり、チュートリアル(使い方)を読んだりできます"
+          >
+            <Icon name="book" />
+            <span className="tool-label">サンプル・使い方</span>
+          </button>
+          <button
+            type="button"
+            className="tool-button"
             onClick={() => setSdCardPanelOpen(true)}
             title="「ゆる楽器」で使う音源をSDカードにコピーします"
           >
@@ -329,7 +427,7 @@ function Editor(): React.JSX.Element {
       </header>
 
       <main className="main">
-        <BlocklyWorkspace ref={blocklyRef} onCodeChange={setCode} />
+        <BlocklyWorkspace ref={blocklyRef} onCodeChange={handleCodeChange} />
         <aside className="side-panel">
           <div className="side-tabs" role="tablist">
             <button
@@ -365,6 +463,17 @@ function Editor(): React.JSX.Element {
         </aside>
       </main>
       {sdCardPanelOpen && <SdCardPanel onClose={() => setSdCardPanelOpen(false)} />}
+      {learnPanelOpen && (
+        <LearnPanel
+          onClose={() => setLearnPanelOpen(false)}
+          onOpenTutorial={() => {
+            setLearnPanelOpen(false);
+            setTutorialOpen(true);
+          }}
+          onOpenSample={handleOpenSample}
+        />
+      )}
+      {tutorialOpen && <TutorialView onClose={() => setTutorialOpen(false)} onOpenSample={handleOpenSample} />}
     </div>
   );
 }

@@ -1,8 +1,11 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import { join } from "node:path";
+import { loadSampleManifest, resolveContentRoot, type SampleInfo } from "./content.js";
 import { registerArduinoIpc } from "./ipc/arduino.js";
+import { registerContentIpc } from "./ipc/content.js";
 import { registerProjectIpc } from "./ipc/project.js";
 import { registerSdCardIpc } from "./ipc/sdcard.js";
+import { buildAppMenu } from "./menu.js";
 import { SetupManager, registerSetupIpc } from "./setup.js";
 
 // package.json の "name" が "@spresense-blocks/editor" (npm workspace用のスコープ付き名前)なので、
@@ -49,6 +52,18 @@ app.whenReady().then(() => {
   registerArduinoIpc(() => mainWindow, setupManager.createArduinoCliClient());
   registerProjectIpc(() => mainWindow);
   registerSdCardIpc();
+
+  const contentRoot = resolveContentRoot();
+  registerContentIpc(contentRoot);
+  let samples: SampleInfo[] = [];
+  try {
+    samples = loadSampleManifest(contentRoot);
+  } catch (error) {
+    // サンプル一覧が読めなくても、アプリ自体は起動できるようにする(メニューのサンプル項目が空になるだけ)。
+    console.error("サンプル一覧の読み込みに失敗しました:", error);
+  }
+  Menu.setApplicationMenu(buildAppMenu(() => mainWindow, samples));
+
   createWindow();
 
   app.on("activate", () => {

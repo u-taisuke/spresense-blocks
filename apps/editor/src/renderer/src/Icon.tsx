@@ -18,6 +18,9 @@ const PATHS = {
   close: "M18 6L6 18M6 6l12 12",
   refresh: "M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6",
   file: "M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6",
+  book: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5",
+  tool: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z",
+  arrowRight: "M5 12h14M13 6l6 6-6 6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

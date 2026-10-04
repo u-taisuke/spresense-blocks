@@ -1,0 +1,79 @@
+{
+  "_notes": [
+    "アプリの「サンプル・使い方」画面と、メニューバーの「サンプル」に表示するサンプルの一覧。",
+    "サンプル(.sprsb)を追加・名前変更したら、ここも更新すること(apps/editor/test/samples-manifest.test.ts で過不足を検査している)。",
+    "category は 基本 / センサー / ゆる楽器 のいずれか。"
+  ],
+  "samples": [
+    {
+      "file": "01_Lチカ.sprsb",
+      "title": "Lチカ",
+      "description": "基板のLEDを0.5秒おきに点滅させる、一番シンプルなプログラムです。",
+      "hardware": "SPRESENSE本体のみ",
+      "category": "基本"
+    },
+    {
+      "file": "02_明るさセンサーでLEDの明るさを変える.sprsb",
+      "title": "明るさセンサーでLEDの明るさを変える",
+      "description": "A0につないだ明るさセンサー(CdSセル等)の値に合わせて、D05のLEDの明るさが変わります。",
+      "hardware": "明るさセンサー、LED、抵抗",
+      "category": "基本"
+    },
+    {
+      "file": "03_ゆる楽器_ボタンドラム.sprsb",
+      "title": "ゆる楽器 ボタンドラム",
+      "description": "D04・D05・D06のボタンで、それぞれ違う高さのピアノの音が鳴ります。",
+      "hardware": "ボタン×3、抵抗×3、SDカード、スピーカー",
+      "category": "ゆる楽器"
+    },
+    {
+      "file": "04_傾きセンサーでLED.sprsb",
+      "title": "傾きセンサーでLED",
+      "description": "センサー拡張ボードの加速度センサーで、基板を傾けるとLED1が点きます。",
+      "hardware": "センサー拡張ボード",
+      "category": "センサー"
+    },
+    {
+      "file": "05_繰り返しでLEDを点滅させる.sprsb",
+      "title": "繰り返しでLEDを点滅させる",
+      "description": "「3回繰り返す」を使って、LED0を3回素早く点滅させ、1秒休むことを繰り返します。",
+      "hardware": "SPRESENSE本体のみ",
+      "category": "基本"
+    },
+    {
+      "file": "06_ボタンでLEDを点ける.sprsb",
+      "title": "ボタンでLEDを点ける",
+      "description": "D04のボタンを押している間だけLED0が点きます。「変数」と「もし〜なら」の練習です。",
+      "hardware": "ボタン、抵抗",
+      "category": "基本"
+    },
+    {
+      "file": "07_温度でLEDを点ける.sprsb",
+      "title": "温度でLEDを点ける",
+      "description": "温度が28℃を超えるとLED1が点きます。センサーを指で温めると変化がわかります。",
+      "hardware": "センサー拡張ボード",
+      "category": "センサー"
+    },
+    {
+      "file": "08_ゆる楽器_和音ボタン.sprsb",
+      "title": "ゆる楽器 和音ボタン",
+      "description": "D04・D05・D06のボタンで、それぞれ違う和音(ド+ミ、ファ+ラ、ソ+シ)が鳴ります。",
+      "hardware": "ボタン×3、抵抗×3、SDカード、スピーカー",
+      "category": "ゆる楽器"
+    },
+    {
+      "file": "09_ゆる楽器_傾き楽器.sprsb",
+      "title": "ゆる楽器 傾き楽器",
+      "description": "基板を右(または左)に傾けると、ド(またはソ)の音が鳴ります。",
+      "hardware": "センサー拡張ボード、SDカード、スピーカー",
+      "category": "ゆる楽器"
+    },
+    {
+      "file": "10_ゆる楽器_メロディ.sprsb",
+      "title": "ゆる楽器 メロディ",
+      "description": "「ド レ ミ ファ ミ レ ド」のメロディを繰り返し鳴らします。「音を鳴らす」と「待つ」を交互に並べる例です。",
+      "hardware": "SDカード、スピーカー",
+      "category": "ゆる楽器"
+    }
+  ]
+}

@@ -11,6 +11,16 @@ files:
 extraResources:
   - from: resources
     to: resources
+  # サンプル(.sprsb と一覧の samples.json)とチュートリアルを、アプリの「サンプル・使い方」画面と
+  # メニューバーから開けるように同梱する。apps/editor/src/main/content.ts の resolveContentRoot() が
+  # パッケージ後に process.resourcesPath/content/ を参照する。
+  - from: ../../samples
+    to: content/samples
+    filter:
+      - "*.sprsb"
+      - samples.json
+  - from: ../../docs/tutorial.md
+    to: content/docs/tutorial.md
 # arduino-cli 等の実行バイナリを同梱する場合や、files 経由で resources を含める場合に備えて、
 # asar の外に展開されるよう asarUnpack の設定も残しておく(extraResources 自体は元々asarの外)。
 asarUnpack:

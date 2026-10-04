@@ -20,6 +20,29 @@ export interface RemovableDrive {
   freeBytes: number;
 }
 
+/** samples/samples.json の1件分(main/content.ts の SampleInfo と同じ形)。 */
+export interface SampleInfo {
+  file: string;
+  title: string;
+  description: string;
+  hardware: string;
+  category: "基本" | "センサー" | "ゆる楽器";
+}
+
+export interface OpenSampleResult {
+  info: SampleInfo;
+  data: unknown;
+}
+
+/** メニューバーからの操作(main/menu.ts の MenuAction と同じ形)。 */
+export type MenuAction =
+  | { type: "open" }
+  | { type: "save" }
+  | { type: "openSample"; file: string }
+  | { type: "showSamples" }
+  | { type: "showTutorial" }
+  | { type: "toggleCode" };
+
 export type CopyVoicesResult = { ok: true; copiedVoices: string[] } | { ok: false; error: string };
 
 export interface SpresenseApi {
@@ -41,6 +64,14 @@ export interface SpresenseApi {
   listRemovableDrives(): Promise<RemovableDrive[]>;
   /** 選んだ音色フォルダを丸ごと、指定したドライブのルート直下にコピーする。 */
   copyVoicesToDrive(driveLetter: string, voices: string[]): Promise<CopyVoicesResult>;
+  /** アプリに同梱されているサンプルの一覧。 */
+  listSamples(): Promise<SampleInfo[]>;
+  /** サンプルを1つ読み込む(file は listSamples() が返したものだけ受け付ける)。 */
+  openSample(file: string): Promise<OpenSampleResult>;
+  /** チュートリアル(Markdown)の本文。 */
+  readTutorial(): Promise<string>;
+  /** メニューバーの項目が選ばれたときに呼ばれる。 */
+  onMenuAction(callback: (action: MenuAction) => void): () => void;
 }
 
 const api: SpresenseApi = {
@@ -70,6 +101,14 @@ const api: SpresenseApi = {
   listRemovableDrives: () => ipcRenderer.invoke("sdcard:listDrives"),
   copyVoicesToDrive: (driveLetter, voices) =>
     ipcRenderer.invoke("sdcard:copyVoices", { driveLetter, voices }),
+  listSamples: () => ipcRenderer.invoke("content:listSamples"),
+  openSample: (file) => ipcRenderer.invoke("content:openSample", file),
+  readTutorial: () => ipcRenderer.invoke("content:readTutorial"),
+  onMenuAction: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, action: MenuAction): void => callback(action);
+    ipcRenderer.on("menu:action", listener);
+    return () => ipcRenderer.removeListener("menu:action", listener);
+  },
 };
 
 contextBridge.exposeInMainWorld("spresense", api);
