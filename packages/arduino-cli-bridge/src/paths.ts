@@ -24,6 +24,15 @@ export function getArduinoDataDir(appDataDir: string): string {
   return join(appDataDir, "arduino-cli-data");
 }
 
+/**
+ * `lib install --git-url` で入れたライブラリの、インストール時の gitUrl(コミット固定)の記録。
+ * ライブラリ名だけでは「固定コミットを更新したのに古い版のまま」を検出できないため、
+ * これと突き合わせて入れ直すかどうかを決める(installer.ts の needsLibraryInstall)。
+ */
+export function getLibraryPinsPath(appDataDir: string): string {
+  return join(appDataDir, "library-pins.json");
+}
+
 /** arduino-cli の `directories.user`(スケッチ・ライブラリ用。本アプリでは主に未使用だが必須設定)。 */
 export function getArduinoUserDir(appDataDir: string): string {
   return join(appDataDir, "arduino-sketches");

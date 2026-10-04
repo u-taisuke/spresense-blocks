@@ -40,7 +40,22 @@ function createGenerator(builder: SketchBuilder): Blockly.Generator {
  * builder は毎回 reset() されるので、呼び出し側で使い回してよい。
  */
 export function generateSketch(workspace: Blockly.Workspace, builder: SketchBuilder): string {
+  // 1回目の走査: 「待つ間も続ける処理」(ゆる楽器の音のデータの読み足し等)を登録するブロックが
+  // あるかどうかを調べる。「待つ」ブロックの方が先に生成されることもあるため、全体を一度
+  // 走査し終わるまでは、「待つ」を delay() にすべきか spresenseWait() にすべきか決められない。
+  runGeneration(workspace, builder, false);
+  if (!builder.hasBackgroundTasks()) {
+    return builder.build();
+  }
+
+  // 2回目の走査: 「待つ」ブロックを spresenseWait() にして、もう一度組み立てる。
+  runGeneration(workspace, builder, true);
+  return builder.build();
+}
+
+function runGeneration(workspace: Blockly.Workspace, builder: SketchBuilder, cooperativeWait: boolean): void {
   builder.reset();
+  builder.setCooperativeWait(cooperativeWait);
   builder.addInclude("<Arduino.h>");
 
   const generator = createGenerator(builder);
@@ -49,6 +64,4 @@ export function generateSketch(workspace: Blockly.Workspace, builder: SketchBuil
     generator.blockToCode(block);
   }
   generator.finish("");
-
-  return builder.build();
 }

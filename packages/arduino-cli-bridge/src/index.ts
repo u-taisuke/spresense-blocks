@@ -11,11 +11,14 @@ export {
   getArduinoCliConfigPath,
   getArduinoDataDir,
   getArduinoUserDir,
+  getLibraryPinsPath,
 } from "./paths.js";
 export {
   ArduinoCliInstaller,
   type InstallProgressEvent,
   type PlatformAsset,
   type LibraryDependency,
+  type LibraryPins,
   getPlatformAsset,
+  needsLibraryInstall,
 } from "./installer.js";

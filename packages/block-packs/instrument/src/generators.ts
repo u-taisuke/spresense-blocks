@@ -1,5 +1,5 @@
 import * as Blockly from "blockly/core";
-import { SketchBuilder } from "@spresense-blocks/codegen-core";
+import { BACKGROUND_UPDATE_FUNCTION, SketchBuilder } from "@spresense-blocks/codegen-core";
 
 /**
  * ssprocLib の SDSink 音源テーブルに使う、ノート番号→ファイル名接尾辞の対応表。
@@ -113,18 +113,26 @@ export function registerGenerators(generator: Blockly.Generator, builder: Sketch
         "  }"
     );
 
-    // SDSink::update() は音を鳴らし続けるために毎ループ呼ぶ必要がある(examplesのloop()と同じ)。
-    // 続けて、設定した長さ(spresenseNoteStopAt)を過ぎた音を止める処理も毎ループ行う
-    // (「音を鳴らす」ブロックが呼ばれるかどうかに関係なく、時間になったら自動で止めるため)。
-    return (
+    // SDSink::update() は、SDカードから音のデータを読み足して音を鳴らし続けるために、
+    // 数ミリ秒おきに呼び続ける必要がある(1回で読み足すのは約50ミリ秒分で、それ以上
+    // 呼ばれないと音のデータが尽きて途切れる)。続けて、設定した長さ(spresenseNoteStopAt)を
+    // 過ぎた音を止める処理も行う(「音を鳴らす」ブロックが呼ばれるかどうかに関係なく、
+    // 時間になったら自動で止めるため)。
+    //
+    // これらは「待つ間も続ける処理」として登録する。こうすると、loop()の先頭だけでなく
+    // 「待つ」ブロックで待っている間(delay()の代わりに spresenseWait() になる)にも実行され、
+    // 「音を鳴らす → 300ミリ秒待つ → 次の音」のようなメロディでも音が途切れない。
+    builder.addBackgroundTask(
+      "instrument-update",
       "spresenseInstrument.update();\n" +
-      "for (int i = 0; i < 128; i++) {\n" +
-      "    if (spresenseNoteStopAt[i] != 0 && millis() >= spresenseNoteStopAt[i]) {\n" +
-      "      spresenseInstrument.sendNoteOff(i, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n" +
-      "      spresenseNoteStopAt[i] = 0;\n" +
-      "    }\n" +
-      "  }\n"
+        "  for (int i = 0; i < 128; i++) {\n" +
+        "    if (spresenseNoteStopAt[i] != 0 && millis() >= spresenseNoteStopAt[i]) {\n" +
+        "      spresenseInstrument.sendNoteOff(i, DEFAULT_VELOCITY, DEFAULT_CHANNEL);\n" +
+        "      spresenseNoteStopAt[i] = 0;\n" +
+        "    }\n" +
+        "  }"
     );
+    return `${BACKGROUND_UPDATE_FUNCTION}();\n`;
   };
 
   generator.forBlock["spresense_instrument_play_note"] = (block: Blockly.Block) => {

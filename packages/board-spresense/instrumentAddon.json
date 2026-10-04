@@ -3,17 +3,20 @@
     "「ゆる楽器」開発向けのSony公式ライブラリ ssprocLib(Sound Signal Processing Library for Spresense)。",
     "リポジトリ: https://github.com/SonySemiconductorSolutions/ssih-music",
     "Arduino Library Managerには未登録(library_index.jsonを確認して非掲載を確認済み、2026-09-29)のため、",
-    "BMI160-Arduinoと同様にGitHubから直接取得する。タグ v1.3.0(=library.propertiesのversionと一致)の",
-    "コミットハッシュに固定している。",
-    "SPRESENSE:spresense:spresense での実コンパイル成功を確認済み(2026-09-29)。",
-    "音源ファイル(SDカードに配置するWAV/SFZ)はライブラリ本体には同梱されていないため、",
-    "実機での音出し確認にはユーザー自身が用意したSDカードが別途必要(docs/roadmap.mdのSDカード準備",
-    "アシスタントは未着手)。"
+    "BMI160-Arduinoと同様にGitHubから直接取得する。",
+    "固定先は、タグ v1.3.0 の後に入った「Fix noise bug.」(PR #17, 2024-07-25)のマージコミット 5fcf93f。",
+    "v1.3.0 の PcmRenderer::render() は、音のデータが足りないチャンネルがあると未初期化のメモリを",
+    "音として混ぜてしまい、ビビり音(雑音)が出る。この修正でデータ不足のチャンネルは無音として扱われる。",
+    "library.properties の version は 1.3.0 のまま変わらないため、アプリのセットアップは",
+    "gitUrl の変更を library-pins.json と突き合わせて検出し、入れ直す(arduino-cli-bridge の installer.ts)。",
+    "SPRESENSE:spresense:spresense での実コンパイル成功を確認済み(v1.3.0: 2026-09-29、5fcf93f: 2026-10-04)。",
+    "音源ファイル(SDカードに配置するWAV)はライブラリ本体には同梱されていないため、",
+    "アプリの「音源コピー」機能でSDカードに用意する。"
   ],
   "libraries": [
     {
       "name": "Sound Signal Processing Library for Spresense",
-      "gitUrl": "https://github.com/SonySemiconductorSolutions/ssih-music.git#12ac44649e0840e0050e9be5096db86d3e9d5fc6"
+      "gitUrl": "https://github.com/SonySemiconductorSolutions/ssih-music.git#5fcf93fad89ee411337d163970d0e5cfca0d9180"
     }
   ]
 }

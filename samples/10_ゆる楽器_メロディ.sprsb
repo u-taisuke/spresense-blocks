@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "boardId": "spresense-main",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "spresense_forever",
+          "id": "forever1",
+          "x": 20,
+          "y": 20,
+          "inputs": {
+            "DO": {
+              "block": {
+                "type": "spresense_instrument_setup",
+                "id": "b15",
+                "fields": { "VOICE": "Piano" },
+                "next": {
+                  "block": {
+                    "type": "spresense_instrument_play_note",
+                    "id": "b1",
+                    "fields": { "NOTE": "60", "DURATION_MS": 300, "VOLUME": 100 },
+                    "next": {
+                      "block": {
+                        "type": "spresense_wait_ms",
+                        "id": "b2",
+                        "fields": { "MS": 300 },
+                        "next": {
+                          "block": {
+                            "type": "spresense_instrument_play_note",
+                            "id": "b3",
+                            "fields": { "NOTE": "62", "DURATION_MS": 300, "VOLUME": 100 },
+                            "next": {
+                              "block": {
+                                "type": "spresense_wait_ms",
+                                "id": "b4",
+                                "fields": { "MS": 300 },
+                                "next": {
+                                  "block": {
+                                    "type": "spresense_instrument_play_note",
+                                    "id": "b5",
+                                    "fields": { "NOTE": "64", "DURATION_MS": 300, "VOLUME": 100 },
+                                    "next": {
+                                      "block": {
+                                        "type": "spresense_wait_ms",
+                                        "id": "b6",
+                                        "fields": { "MS": 300 },
+                                        "next": {
+                                          "block": {
+                                            "type": "spresense_instrument_play_note",
+                                            "id": "b7",
+                                            "fields": { "NOTE": "65", "DURATION_MS": 300, "VOLUME": 100 },
+                                            "next": {
+                                              "block": {
+                                                "type": "spresense_wait_ms",
+                                                "id": "b8",
+                                                "fields": { "MS": 300 },
+                                                "next": {
+                                                  "block": {
+                                                    "type": "spresense_instrument_play_note",
+                                                    "id": "b9",
+                                                    "fields": { "NOTE": "64", "DURATION_MS": 300, "VOLUME": 100 },
+                                                    "next": {
+                                                      "block": {
+                                                        "type": "spresense_wait_ms",
+                                                        "id": "b10",
+                                                        "fields": { "MS": 300 },
+                                                        "next": {
+                                                          "block": {
+                                                            "type": "spresense_instrument_play_note",
+                                                            "id": "b11",
+                                                            "fields": { "NOTE": "62", "DURATION_MS": 300, "VOLUME": 100 },
+                                                            "next": {
+                                                              "block": {
+                                                                "type": "spresense_wait_ms",
+                                                                "id": "b12",
+                                                                "fields": { "MS": 300 },
+                                                                "next": {
+                                                                  "block": {
+                                                                    "type": "spresense_instrument_play_note",
+                                                                    "id": "b13",
+                                                                    "fields": { "NOTE": "60", "DURATION_MS": 300, "VOLUME": 100 },
+                                                                    "next": {
+                                                                      "block": {
+                                                                        "type": "spresense_wait_ms",
+                                                                        "id": "b14",
+                                                                        "fields": { "MS": 300 },
+                                                                        "next": {
+                                                                          "block": {
+                                                                            "type": "spresense_wait_ms",
+                                                                            "id": "b16",
+                                                                            "fields": { "MS": 600 }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { ArduinoCliClient } from "./ArduinoCliClient.js";
@@ -8,6 +8,7 @@ import {
   getArduinoCliConfigPath,
   getArduinoDataDir,
   getArduinoUserDir,
+  getLibraryPinsPath,
 } from "./paths.js";
 
 export interface PlatformAsset {
@@ -74,6 +75,25 @@ export interface LibraryDependency {
 }
 
 type ProgressCallback = (event: InstallProgressEvent) => void;
+
+/** ライブラリ名 → インストールしたときの gitUrl。 */
+export type LibraryPins = Record<string, string>;
+
+/**
+ * ライブラリを(入れ直しも含めて)インストールする必要があるかどうか。
+ *
+ * - 未インストールなら必要。
+ * - gitUrl で入れるライブラリは、記録にあるインストール時の gitUrl が今の固定値と違えば必要
+ *   (固定コミットを更新しても、ライブラリのバージョン表記が同じことがあるため、名前だけでは
+ *   古い版のままになってしまう。記録が無い=以前のバージョンのアプリで入れた場合も、1回だけ入れ直す)。
+ *   `lib install --git-url` は、インストール済みのライブラリを新しい内容で置き換える。
+ */
+export function needsLibraryInstall(lib: LibraryDependency, installedNames: string[], pins: LibraryPins): boolean {
+  if (!installedNames.includes(lib.name)) {
+    return true;
+  }
+  return lib.gitUrl !== undefined && pins[lib.name] !== lib.gitUrl;
+}
 
 /** Windows は System32 の bsdtar(zip/tar.gz両対応)、それ以外は PATH 上の tar を使う。 */
 function getTarExecutable(): string {
@@ -240,9 +260,10 @@ export class ArduinoCliInstaller {
       return;
     }
     const installedNames = await client.getInstalledLibraryNames();
+    const pins = this.readLibraryPins();
 
     for (const lib of libraries) {
-      if (installedNames.includes(lib.name)) {
+      if (!needsLibraryInstall(lib, installedNames, pins)) {
         continue;
       }
       onProgress({ step: "install-library", message: `${lib.name} をインストールしています...` });
@@ -254,10 +275,26 @@ export class ArduinoCliInstaller {
       };
       if (lib.gitUrl) {
         await client.installLibraryFromGit(lib.gitUrl, events);
+        pins[lib.name] = lib.gitUrl;
+        this.writeLibraryPins(pins);
       } else if (lib.libraryManagerName) {
         await client.installLibrary(lib.libraryManagerName, events);
       }
     }
+  }
+
+  private readLibraryPins(): LibraryPins {
+    try {
+      const parsed: unknown = JSON.parse(readFileSync(getLibraryPinsPath(this.appDataDir), "utf8"));
+      return parsed && typeof parsed === "object" ? (parsed as LibraryPins) : {};
+    } catch {
+      // まだ記録が無い(初回、または以前のバージョンのアプリ)場合。
+      return {};
+    }
+  }
+
+  private writeLibraryPins(pins: LibraryPins): void {
+    writeFileSync(getLibraryPinsPath(this.appDataDir), `${JSON.stringify(pins, null, 2)}\n`, "utf8");
   }
 
   /**
