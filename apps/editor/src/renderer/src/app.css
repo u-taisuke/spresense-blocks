@@ -1237,3 +1237,27 @@ input:focus-visible {
 .markdown-body strong {
   color: #111827;
 }
+
+/* ───────── 確認画面(ConfirmDialog) ───────── */
+
+/* 他の画面(サンプル一覧等)の上に重ねて出すことがあるため、一段上に表示する。 */
+.confirm-overlay {
+  z-index: 200;
+}
+
+.confirm-dialog {
+  width: 460px;
+}
+
+.modal-icon.is-warning {
+  background: #fff4e6;
+  color: var(--color-warning);
+}
+
+.confirm-message {
+  margin: 12px 0 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
