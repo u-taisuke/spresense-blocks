@@ -115,6 +115,9 @@ git tag -a v1.2.3 -m "Spresense Blocks v1.2.3"
 git push origin v1.2.3
 ```
 
+タグをプッシュする代わりに、GitHubの「Actions」タブで「Release」ワークフローを選び、
+「Run workflow」で `master` に対して手動実行することもできます(タグはリリースと同時に作られます)。
+
 ## リポジトリ構成
 
 ```
