@@ -115,6 +115,9 @@ git tag -a v1.2.3 -m "Spresense Blocks v1.2.3"
 git push origin v1.2.3
 ```
 
+インストーラーへのコード署名(SignPath Foundation)の設定は [docs/code-signing.md](./docs/code-signing.md) を
+参照してください。設定が済んでいれば、ワークフローが署名してから公開します(署名リクエストの承認が必要です)。
+
 タグをプッシュする代わりに、GitHubの「Actions」タブで「Release」ワークフローを選び、
 「Run workflow」で `master` に対して手動実行することもできます(タグはリリースと同時に作られます)。
 
@@ -127,6 +130,30 @@ packages/board-spresense/ ボード定義(FQBN・ピン配列)をデータとし
 packages/arduino-cli-bridge/ arduino-cliサブプロセスの唯一の窓口
 packages/block-packs/    機能ごとのブロック定義(新機能は新パックを追加するだけ)
 ```
+
+## コード署名ポリシー
+
+Windows インストーラーへのコード署名には、次の無料サービスを利用しています(設定手順は
+[docs/code-signing.md](./docs/code-signing.md))。
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
+(SignPath.io による無料のコード署名、証明書は SignPath Foundation が提供)
+
+- 署名するのは、このリポジトリのソースから GitHub Actions(`.github/workflows/release.yml`)で
+  自動ビルドしたインストーラーだけです
+- 役割
+  - コミッター・レビュアー: [u-taisuke](https://github.com/u-taisuke)
+  - 署名の承認者: [u-taisuke](https://github.com/u-taisuke)
+
+### プライバシーポリシー
+
+このアプリは、利用者が明示的に求めた場合、または次の目的に必要な場合を除き、ほかのネットワーク上の
+システムに情報を送信しません。利用者の個人情報やプログラムの内容を収集・送信することはありません。
+
+- 初回起動時(および必要なとき)に、プログラムの書き込みに使う道具(arduino-cli)、SPRESENSEのボード情報、
+  ブロックが使うライブラリを、GitHub・Arduino・Sony の配布サーバーからダウンロードします
+- 「USBが認識されないとき」やチュートリアル内のリンクを利用者が押したときに、既定のブラウザで
+  Sony の SPRESENSE 開発者向けページや、このリポジトリのページを開きます
 
 ## ライセンス
 

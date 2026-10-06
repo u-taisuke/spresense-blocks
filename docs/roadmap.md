@@ -162,6 +162,13 @@ electron-builderのインストール先フォルダ名(`@spresense-blockseditor
   - `samples/` フォルダに4つの`.sprsb`サンプルを追加(Lチカ、明るさでLED調光、
     ゆる楽器のボタンドラム、傾きセンサーでLED)。すべて実際にアプリの読込→コード生成→
     `arduino-cli compile` まで通ることを確認済み(2026-10-01)
+- [ ] Windows インストーラーのコード署名(SignPath Foundation)
+  - [x] リリース用ワークフローに署名の手順を追加(2026-10-06)。Secrets の `SIGNPATH_API_TOKEN` があるときだけ
+    署名し、Windows の `Get-AuthenticodeSignature` で署名が有効か確かめてから公開する。無いときは従来どおり署名なしで公開
+  - [x] SignPath 側の Artifact Configuration のひな形(`.signpath/artifact-configuration.xml`)、
+    設定手順(`docs/code-signing.md`)、README のコード署名ポリシー・プライバシーポリシーを追加
+  - [ ] SignPath Foundation への申請・審査(開発者本人が行う)
+  - [ ] SignPath・GitHub の設定を済ませ、実際に署名付きでリリースして確認する
 - [x] v1.2.0 リリース(2026-10-04): 新しい音色(オルガン・鉄琴・8ビット)と Tab キーでの入力欄移動
 - [x] ゆる楽器の音色に「オルガン」「鉄琴」「8ビット」を追加(2026-10-04)
   - ピアノ・サックスと同じく `generate-sound-assets.py` で倍音合成した音源(各14音、48kHz/16bit/2ch、1.2秒)。

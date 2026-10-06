@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath の「Artifact Configuration」(署名する対象の定義)のひな形。
+  SignPath の画面でプロジェクトの Artifact Configuration を作るときに、この内容を貼り付ける。
+  (このファイル自体はワークフローからは読まれない。SignPath 側の設定を記録・共有するために置いている)
+
+  release.yml は、インストーラー(Spresense Blocks Setup <バージョン>.exe)1つだけを
+  GitHub のアーティファクト(zip)としてアップロードする。その中の .exe に Authenticode 署名を付ける。
+  SignPath の画面で保存するときに内容が検証されるので、エラーが出たらその指示に合わせて直すこと。
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file-set>
+      <include path="*.exe" min-matches="1" max-matches="1" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>
