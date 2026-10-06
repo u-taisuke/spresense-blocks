@@ -10,6 +10,9 @@ name: Release
 #      (タグをプッシュできない環境では、GitHubの Actions タブからこのワークフローを
 #       「Run workflow」で master に対して手動実行してもよい。その場合はバージョンからタグ名を決め、
 #       リリースの公開と同時にタグも作成する)
+#
+# コード署名(SignPath Foundation): docs/code-signing.md の設定(GitHubの Secrets / Variables)が
+# 済んでいれば、インストーラーを SignPath で署名してから公開する。設定が無い間は署名せずに公開する。
 on:
   push:
     tags: ["v*"]
@@ -17,11 +20,15 @@ on:
 
 permissions:
   contents: write
+  # SignPath の Action が、このジョブの情報と署名前のインストーラー(アーティファクト)を読むために必要。
+  actions: read
 
 jobs:
   windows-installer:
     name: Windows installer
     runs-on: windows-latest
+    # SignPath Foundation の署名は担当者の手動承認が必要なため、承認を待つ時間も含めて長めにしている。
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -69,6 +76,61 @@ jobs:
           npm run build
           npx electron-builder --win --publish never
 
+      # ───── コード署名(SignPath)─────
+      # Secrets の SIGNPATH_API_TOKEN が設定されているときだけ署名する(docs/code-signing.md 参照)。
+      - name: Check whether SignPath signing is configured
+        id: signpath
+        shell: bash
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        run: |
+          if [ -n "$SIGNPATH_API_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "SignPath でインストーラーに署名します"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SignPath の設定が無いため、署名せずに公開します(docs/code-signing.md 参照)"
+          fi
+
+      - name: Upload the unsigned installer for signing
+        id: upload-unsigned
+        if: steps.signpath.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: apps/editor/release/*.exe
+          if-no-files-found: error
+
+      # 署名リクエストを送り、承認・署名が終わるのを待って、署名済みのインストーラーを受け取る。
+      # SignPath Foundation のリリース用署名は手動承認が必要なので、SignPath の画面で承認すること
+      # (待つのは最大4時間。それを過ぎるとこのステップは失敗するので、承認後にワークフローを再実行する)。
+      - name: Sign the installer with SignPath
+        if: steps.signpath.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 14400
+          output-artifact-directory: apps/editor/release/signed
+
+      # 署名が本当に付いているか(壊れていないか)を、Windows自身の仕組みで確かめてから公開する。
+      - name: Verify the signature
+        if: steps.signpath.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem apps/editor/release/signed -Filter *.exe
+          if ($files.Count -eq 0) { throw "署名済みのインストーラーが見つかりません" }
+          foreach ($file in $files) {
+            $signature = Get-AuthenticodeSignature $file.FullName
+            Write-Host "$($file.Name): $($signature.Status) / $($signature.SignerCertificate.Subject)"
+            if ($signature.Status -ne "Valid") { throw "$($file.Name) の署名が有効ではありません: $($signature.StatusMessage)" }
+          }
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -77,5 +139,6 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Spresense Blocks ${{ steps.tag.outputs.name }}
           body_path: docs/release-notes/${{ steps.tag.outputs.name }}.md
-          files: apps/editor/release/*.exe
+          # 署名したときは署名済みのもの、署名しなかったときはビルドしたままのものを公開する。
+          files: ${{ steps.signpath.outputs.enabled == 'true' && 'apps/editor/release/signed/*.exe' || 'apps/editor/release/*.exe' }}
           fail_on_unmatched_files: true

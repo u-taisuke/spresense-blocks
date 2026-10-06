@@ -1,5 +1,7 @@
 appId: jp.ac.shohoku.spresense-blocks
 productName: Spresense Blocks
+# インストーラーと実行ファイルのプロパティ(詳細タブ)に表示される著作権表示。
+copyright: Copyright © 2026 Taisuke Utsumi
 directories:
   buildResources: build
   output: release
