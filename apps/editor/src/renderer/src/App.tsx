@@ -8,6 +8,7 @@ import { TutorialView } from "./TutorialView";
 import { PortSelect } from "./PortSelect";
 import { SdCardPanel } from "./SdCardPanel";
 import { SetupScreen } from "./SetupScreen";
+import { summarizeProgressDetail } from "./setupProgress";
 import type { DetectedBoard } from "@spresense-blocks/arduino-cli-bridge";
 import { board, isSpresenseDetectedBoard } from "@spresense-blocks/board-spresense";
 import { PROJECT_SCHEMA_VERSION, type ProjectFile } from "./project";
@@ -38,6 +39,7 @@ type SidePanelTab = "log" | "code";
 export function App(): React.JSX.Element {
   const [setupReady, setSetupReady] = useState(false);
   const [setupMessage, setSetupMessage] = useState("準備しています…");
+  const [setupDetail, setSetupDetail] = useState("");
   const [setupError, setSetupError] = useState<string | null>(null);
 
   const runSetup = useCallback(() => {
@@ -54,13 +56,22 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     const unsubscribe = window.spresense.onSetupProgress((event) => {
       setSetupMessage(event.message);
+      if (event.detail === undefined) {
+        setSetupDetail("");
+        return;
+      }
+      // 改行だけの断片などで、直前の表示が消えてちらつかないようにする
+      const detail = summarizeProgressDetail(event.detail);
+      if (detail) {
+        setSetupDetail(detail);
+      }
     });
     runSetup();
     return unsubscribe;
   }, [runSetup]);
 
   if (!setupReady) {
-    return <SetupScreen message={setupMessage} error={setupError} onRetry={runSetup} />;
+    return <SetupScreen message={setupMessage} detail={setupDetail} error={setupError} onRetry={runSetup} />;
   }
 
   return <Editor />;

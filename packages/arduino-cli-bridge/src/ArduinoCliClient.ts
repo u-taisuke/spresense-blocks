@@ -1,5 +1,5 @@
-import { spawn } from "node:child_process";
 import { resolveArduinoCliPath } from "./paths.js";
+import { ProcessTimeoutError, runProcess } from "./runProcess.js";
 
 export interface ArduinoCliEvents {
   onStdout?: (chunk: string) => void;
@@ -24,24 +24,58 @@ export class ArduinoCliExitError extends Error {
 }
 
 export class ArduinoCliTimeoutError extends Error {
-  constructor(public readonly command: string[]) {
+  constructor(
+    public readonly command: string[],
+    /** "total" = 上限時間を超えた / "idle" = 何も出力しないまま(=ダウンロードが止まったまま)時間が過ぎた */
+    public readonly kind: "total" | "idle" = "total"
+  ) {
     super(
-      `arduino-cli ${command.join(" ")} が一定時間たっても終わりませんでした。` +
-        "ネットワークが不安定か、ファイアウォール/ウイルス対策ソフトが通信をブロックしている可能性があります。"
+      kind === "idle"
+        ? `arduino-cli ${command.join(" ")} のダウンロードが途中で止まったまま進まなくなったため、中断しました。` +
+            "ネットワークが不安定か、プロキシ・ファイアウォール・ウイルス対策ソフトが通信をブロックしている可能性があります。"
+        : `arduino-cli ${command.join(" ")} が一定時間たっても終わりませんでした。` +
+            "ネットワークが不安定か、ファイアウォール/ウイルス対策ソフトが通信をブロックしている可能性があります。"
     );
     this.name = "ArduinoCliTimeoutError";
   }
 }
 
+/** コマンドごとの時間切れの判定方法。 */
+interface TimeoutPolicy {
+  totalTimeoutMs: number;
+  idleTimeoutMs?: number;
+}
+
 /**
- * 1コマンドに許す最大実行時間。
- *
- * ネットワークが完全に無応答の場合、arduino-cli 自身がハングして戻ってこないことがある
- * (ファイアウォール/ウイルス対策ソフトが未署名の通信を検査中に無応答のまま止めてしまう等)。
- * それでもUIが「ずっと処理中」のまま固まってしまわないよう、必ずここで強制終了する。
- * コンパイルやコアインストールは数十秒〜数分かかることがあるため、十分長めに取ってある。
+ * ネットワークを使わないコマンド(コンパイル・書き込み・一覧取得など)の上限時間。
+ * コンパイルは途中経過を出力しないことがあるため、「止まっている時間」ではなく合計時間で判定する。
+ * ハングしたまま「ずっと処理中」で固まらないよう、必ずここで強制終了する。
  */
-const COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
+const LOCAL_COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * ダウンロードを伴うコマンド(ボード情報の更新・コア/ライブラリのインストール)の判定方法。
+ *
+ * SPRESENSEコアのインストールは合計約225MBのダウンロードになり、遅い回線では5分では終わらない
+ * (以前は一律5分で打ち切っていたため、約6Mbps未満の回線ではセットアップが絶対に完了しなかった)。
+ * arduino-cli はダウンロード中に進捗を出力し続けるので、「出力が途絶えた時間」でネットワークが
+ * 止まったことを判断する。遅くても進んでいる限りは待ち、止まったら早めに知らせる。
+ */
+const NETWORK_COMMAND_TIMEOUTS: TimeoutPolicy = {
+  idleTimeoutMs: 3 * 60 * 1000,
+  totalTimeoutMs: 60 * 60 * 1000,
+};
+
+export interface ArduinoCliClientOptions {
+  /**
+   * すべてのコマンドの子プロセスに追加で渡す環境変数。
+   * プロキシ環境では `ARDUINO_NETWORK_PROXY`(arduino-cli の設定 `network.proxy` に相当)を渡す。
+   * arduino-cli は `HTTPS_PROXY` 等の一般的な環境変数もWindowsのプロキシ設定も見ないため、明示が必要。
+   */
+  env?: Record<string, string>;
+  /** テスト用。ネットワークを使わないコマンドの上限時間を上書きする。 */
+  localCommandTimeoutMs?: number;
+}
 
 /**
  * arduino-cli サブプロセスの唯一の窓口。
@@ -60,13 +94,18 @@ export class ArduinoCliClient {
   /** 直前にキューされたコマンドの完了を表す Promise。次のコマンドはこれに続けて実行する。 */
   private queue: Promise<void> = Promise.resolve();
 
+  private readonly env: NodeJS.ProcessEnv | undefined;
+  private readonly localTimeouts: TimeoutPolicy;
+
   constructor(
     private readonly binaryPath: string = resolveArduinoCliPath(),
     /** 指定すると、すべてのコマンドに `--config-file <path>` を付与する(ユーザーの既存Arduino環境を触らないため)。 */
     private readonly configFilePath?: string,
-    /** テスト用。既定値は COMMAND_TIMEOUT_MS(5分)。 */
-    private readonly commandTimeoutMs: number = COMMAND_TIMEOUT_MS
-  ) {}
+    options: ArduinoCliClientOptions = {}
+  ) {
+    this.env = options.env ? { ...process.env, ...options.env } : undefined;
+    this.localTimeouts = { totalTimeoutMs: options.localCommandTimeoutMs ?? LOCAL_COMMAND_TIMEOUT_MS };
+  }
 
   async compile(sketchDir: string, fqbn: string, events: ArduinoCliEvents = {}): Promise<void> {
     await this.run(["compile", "--fqbn", fqbn, sketchDir], events);
@@ -77,11 +116,11 @@ export class ArduinoCliClient {
   }
 
   async updateIndex(events: ArduinoCliEvents = {}): Promise<void> {
-    await this.run(["core", "update-index"], events);
+    await this.run(["core", "update-index"], events, NETWORK_COMMAND_TIMEOUTS);
   }
 
   async ensureCoreInstalled(coreId: string, events: ArduinoCliEvents = {}): Promise<void> {
-    await this.run(["core", "install", coreId], events);
+    await this.run(["core", "install", coreId], events, NETWORK_COMMAND_TIMEOUTS);
   }
 
   /** インストール済みのコアのバージョンを返す(未インストールなら null)。 */
@@ -111,7 +150,7 @@ export class ArduinoCliClient {
 
   /** Arduino Library Manager からライブラリをインストールする。 */
   async installLibrary(libraryManagerName: string, events: ArduinoCliEvents = {}): Promise<void> {
-    await this.run(["lib", "install", libraryManagerName], events);
+    await this.run(["lib", "install", libraryManagerName], events, NETWORK_COMMAND_TIMEOUTS);
   }
 
   /**
@@ -120,7 +159,7 @@ export class ArduinoCliClient {
    * @param gitUrl 末尾に `#<commit-sha>` を付けてコミットを固定すること(再現性とセキュリティのため)。
    */
   async installLibraryFromGit(gitUrl: string, events: ArduinoCliEvents = {}): Promise<void> {
-    await this.run(["lib", "install", "--git-url", gitUrl], events);
+    await this.run(["lib", "install", "--git-url", gitUrl], events, NETWORK_COMMAND_TIMEOUTS);
   }
 
   /** インストール済みライブラリの名前一覧(`lib list` に出る表示名)を返す。 */
@@ -139,8 +178,8 @@ export class ArduinoCliClient {
    * このコマンドを実行する。`queue` 自体は常に成功する Promise にしておく(catchで握りつぶす)
    * ことで、1つのコマンドが失敗しても後続のコマンドが実行されなくなる事態を防いでいる。
    */
-  private run(args: string[], events: ArduinoCliEvents): Promise<void> {
-    const task = this.queue.then(() => this.exec(args, events));
+  private run(args: string[], events: ArduinoCliEvents, timeouts: TimeoutPolicy = this.localTimeouts): Promise<void> {
+    const task = this.queue.then(() => this.exec(args, events, timeouts));
     this.queue = task.then(
       () => undefined,
       () => undefined
@@ -148,52 +187,26 @@ export class ArduinoCliClient {
     return task;
   }
 
-  private exec(args: string[], events: ArduinoCliEvents): Promise<void> {
+  private async exec(args: string[], events: ArduinoCliEvents, timeouts: TimeoutPolicy): Promise<void> {
     const fullArgs = this.configFilePath ? ["--config-file", this.configFilePath, ...args] : args;
 
-    return new Promise((resolve, reject) => {
-      const child = spawn(this.binaryPath, fullArgs, { windowsHide: true });
-      let stderr = "";
-      let settled = false;
-
-      const timeoutId = setTimeout(() => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        child.kill();
-        reject(new ArduinoCliTimeoutError(args));
-      }, this.commandTimeoutMs);
-
-      child.stdout.on("data", (data: Buffer) => events.onStdout?.(data.toString("utf8")));
-      child.stderr.on("data", (data: Buffer) => {
-        const text = data.toString("utf8");
-        stderr += text;
-        events.onStderr?.(text);
+    let result;
+    try {
+      result = await runProcess(this.binaryPath, fullArgs, {
+        env: this.env,
+        onStdout: events.onStdout,
+        onStderr: events.onStderr,
+        ...timeouts,
       });
-
-      child.on("error", (error) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTimeout(timeoutId);
-        reject(error);
-      });
-
-      child.on("close", (exitCode) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTimeout(timeoutId);
-        if (exitCode === 0) {
-          resolve();
-        } else {
-          reject(new ArduinoCliExitError(args, exitCode, stderr));
-        }
-      });
-    });
+    } catch (error) {
+      if (error instanceof ProcessTimeoutError) {
+        throw new ArduinoCliTimeoutError(args, error.kind);
+      }
+      throw error;
+    }
+    if (result.exitCode !== 0) {
+      throw new ArduinoCliExitError(args, result.exitCode, result.stderr);
+    }
   }
 }
 

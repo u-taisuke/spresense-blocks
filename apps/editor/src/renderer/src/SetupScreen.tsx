@@ -1,5 +1,10 @@
 export interface SetupScreenProps {
   message: string;
+  /**
+   * ダウンロード量や arduino-cli の進捗など、細かい進み具合。
+   * 大きなダウンロードの間も表示が変わり続けるので、「止まっていない」ことが分かる。
+   */
+  detail: string;
   error: string | null;
   onRetry: () => void;
 }
@@ -8,7 +13,7 @@ export interface SetupScreenProps {
  * 初回起動時、arduino-cli本体のダウンロードとSPRESENSEコアのインストールが終わるまで表示する画面。
  * 一度セットアップが終われば、次回からはネットワークにアクセスせず一瞬で通過する。
  */
-export function SetupScreen({ message, error, onRetry }: SetupScreenProps): React.JSX.Element {
+export function SetupScreen({ message, detail, error, onRetry }: SetupScreenProps): React.JSX.Element {
   return (
     <div className="setup-screen">
       <div className="setup-card">
@@ -16,13 +21,16 @@ export function SetupScreen({ message, error, onRetry }: SetupScreenProps): Reac
         <h1>Spresense Blocks を準備しています</h1>
         <p className="setup-note">
           初めて起動したときだけ、プログラムを書き込むための道具(arduino-cli と
-          SPRESENSEのボード情報)をダウンロードします。数分かかることがあります。
+          SPRESENSEのボード情報、約250MB)をダウンロードします。回線によっては十数分かかることがあります。
         </p>
 
         {!error && (
           <>
             <div className="setup-spinner" aria-hidden="true" />
             <p className="setup-message">{message}</p>
+            <p className="setup-detail" aria-live="off">
+              {detail}
+            </p>
           </>
         )}
 

@@ -632,6 +632,16 @@ input:focus-visible {
   margin: 18px 0 4px;
 }
 
+/* 中身が空のときも高さを確保して、表示が出たり消えたりしてもカードががたつかないようにする */
+.setup-detail {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
 .setup-spinner {
   width: 40px;
   height: 40px;

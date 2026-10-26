@@ -43,7 +43,10 @@ SPRESENSE を動かせることを目標にしています。
 **[Releases](https://github.com/u-taisuke/spresense-blocks/releases/latest) から Windows
 インストーラー(`.exe`)をダウンロードして実行するだけで使えます**(ビルド不要、管理者権限不要)。
 初回起動時に `arduino-cli` と SPRESENSE のボード情報を自動でダウンロード・セットアップします
-(数分かかることがあります。2回目以降はネットワーク不要で高速に起動します)。
+(合計約250MBのダウンロードがあり、回線によっては数分〜十数分かかります。2回目以降はネットワーク不要で高速に起動します)。
+プロキシが必要なネットワークでは、Windows の「プロキシ設定」(自動構成スクリプトを含む)に設定された
+プロキシを自動で使います(ID・パスワードが必要なプロキシには未対応です)。
+次の接続先(すべて HTTPS)へのアクセスが必要です: `github.com`・`release-assets.githubusercontent.com`・`downloads.arduino.cc`。
 SPRESENSEが認識されない場合は、アプリ右上の「USBが認識されないときは」からドライバ案内ページを開けます。
 
 コード署名はしていないため、実行時にWindows Defender SmartScreenの警告が出ます。

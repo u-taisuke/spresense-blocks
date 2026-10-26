@@ -127,39 +127,123 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** `fetch` と同じ形の関数。Electron では OS のプロキシ設定に従う `net.fetch` を渡す。 */
+export type FetchLike = (url: string, init?: { signal?: AbortSignal }) => Promise<Response>;
+
+export interface DownloadOptions {
+  /** 既定は Node.js 組み込みの `fetch`(OS のプロキシ設定は見ない)。 */
+  fetchImpl?: FetchLike;
+  attempts?: number;
+  /** データが1バイトも届かないまま この時間が過ぎたら、止まったとみなして打ち切る。 */
+  stallTimeoutMs?: number;
+  /** リトライ前の待ち時間の基準(試行回数倍する)。テスト用。 */
+  retryDelayMs?: number;
+  /** 受信済みバイト数と全体のバイト数(サーバーが教えてくれない場合は null)。 */
+  onProgress?: (receivedBytes: number, totalBytes: number | null) => void;
+}
+
 /**
- * 1回のダウンロード試行に許す最大時間。
+ * 「止まった」とみなすまでの時間。
  *
- * ファイアウォールやウイルス対策ソフトが新規の未署名exeからの通信を検査中に無応答のまま
- * 固まらせてしまうことがあり、`fetch` はネットワークが完全に無応答だと既定でタイムアウトせず
- * 永久に待ち続けてしまう。それを防ぎ、必ず一定時間でエラーとしてユーザーに知らせるための上限。
- * ( arduino-cli 本体は数十MB程度なので、60秒あれば非常に遅い回線でも十分足りる )
+ * 以前は1回の試行全体を60秒で打ち切っていたが、arduino-cli 本体は約18MBあり、
+ * 約2.5Mbps未満の回線(混み合った学校の回線など)では、正常にダウンロードが進んでいても
+ * 毎回途中で打ち切られ、3回とも失敗してセットアップが絶対に終わらなかった。
+ * そのため「合計時間」ではなく「データが届かない時間」で判定する。遅くても進んでいる限りは待ち、
+ * ファイアウォール等で通信が無応答のまま固まった場合だけ打ち切る。
  */
-const DOWNLOAD_TIMEOUT_MS = 60_000;
+const DOWNLOAD_STALL_TIMEOUT_MS = 60_000;
+
+class DownloadStalledError extends Error {
+  constructor(timeoutMs: number) {
+    super(`${Math.round(timeoutMs / 1000)}秒間データが届かなかったため中断しました`);
+    this.name = "DownloadStalledError";
+  }
+}
+
+/** 1回分のダウンロード。データが届くたびに「止まった」判定のタイマーを延長する。 */
+async function downloadOnce(
+  url: string,
+  fetchImpl: FetchLike,
+  stallTimeoutMs: number,
+  onProgress: DownloadOptions["onProgress"]
+): Promise<Buffer> {
+  const controller = new AbortController();
+  let stalledError: DownloadStalledError | undefined;
+  let stallTimer: ReturnType<typeof setTimeout> | undefined;
+  const resetStallTimer = (): void => {
+    clearTimeout(stallTimer);
+    stallTimer = setTimeout(() => {
+      stalledError = new DownloadStalledError(stallTimeoutMs);
+      controller.abort(stalledError);
+    }, stallTimeoutMs);
+  };
+
+  resetStallTimer();
+  try {
+    const response = await fetchImpl(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    const lengthHeader = response.headers.get("content-length");
+    const totalBytes = lengthHeader !== null && /^\d+$/.test(lengthHeader) ? Number(lengthHeader) : null;
+    if (!response.body) {
+      throw new Error("サーバーからの応答が空でした");
+    }
+
+    const reader = response.body.getReader();
+    // 中断の仕方は fetch の実装(Node.js / Electron)によって差があるため、
+    // abort に加えて読み取り側も明示的に止め、確実に read() から抜けるようにする。
+    controller.signal.addEventListener("abort", () => void reader.cancel().catch(() => undefined), { once: true });
+
+    const chunks: Uint8Array[] = [];
+    let receivedBytes = 0;
+    onProgress?.(0, totalBytes);
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (stalledError) {
+        throw stalledError;
+      }
+      if (done) {
+        break;
+      }
+      resetStallTimer();
+      chunks.push(value);
+      receivedBytes += value.byteLength;
+      onProgress?.(receivedBytes, totalBytes);
+    }
+    if (totalBytes !== null && receivedBytes !== totalBytes) {
+      throw new Error(`ダウンロードが途中で切れました(${receivedBytes} / ${totalBytes} バイト)`);
+    }
+    return Buffer.concat(chunks);
+  } catch (error) {
+    throw stalledError ?? error;
+  } finally {
+    clearTimeout(stallTimer);
+  }
+}
 
 /**
  * 指定URLをダウンロードする。学校のネットワーク環境は不安定・プロキシ経由なことがあるため、
- * 数回リトライしてからでないと諦めない。1回あたり `DOWNLOAD_TIMEOUT_MS` で強制的に切り上げる。
+ * 数回リトライしてからでないと諦めない。
  */
-async function downloadWithRetry(url: string, attempts = 3): Promise<Buffer> {
+export async function downloadFile(url: string, options: DownloadOptions = {}): Promise<Buffer> {
+  const {
+    fetchImpl = (u, init) => fetch(u, init),
+    attempts = 3,
+    stallTimeoutMs = DOWNLOAD_STALL_TIMEOUT_MS,
+    retryDelayMs = 1000,
+    onProgress,
+  } = options;
+
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(new Error("タイムアウトしました")), DOWNLOAD_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      return Buffer.from(arrayBuffer);
+      return await downloadOnce(url, fetchImpl, stallTimeoutMs, onProgress);
     } catch (error) {
       lastError = error;
       if (attempt < attempts) {
-        await sleep(1000 * attempt);
+        await sleep(retryDelayMs * attempt);
       }
-    } finally {
-      clearTimeout(timeoutId);
     }
   }
   throw new Error(
@@ -168,6 +252,19 @@ async function downloadWithRetry(url: string, attempts = 3): Promise<Buffer> {
       "ネットワーク管理者に、以下のURLへのアクセスを許可してもらえるか確認してください。\n" +
       `URL: ${url}\n元のエラー: ${String(lastError)}`
   );
+}
+
+function formatMegabytes(bytes: number): string {
+  return (bytes / 1024 / 1024).toFixed(1);
+}
+
+/** ダウンロードの進み具合を「3.2 / 18.0 MB (17%)」のような1行にする。 */
+export function formatDownloadProgress(receivedBytes: number, totalBytes: number | null): string {
+  if (totalBytes === null || totalBytes <= 0) {
+    return `${formatMegabytes(receivedBytes)} MB`;
+  }
+  const percent = Math.floor((receivedBytes / totalBytes) * 100);
+  return `${formatMegabytes(receivedBytes)} / ${formatMegabytes(totalBytes)} MB (${percent}%)`;
 }
 
 /** YAML の文字列値として安全に埋め込む(JSON文字列のエスケープ規則はYAMLのダブルクォート文字列と互換)。 */
@@ -189,10 +286,28 @@ export interface InstallerBoardInfo {
  * 一切触れない。すでにセットアップ済みなら(バイナリが存在し、コアのバージョンが一致していれば)
  * ネットワークに一切アクセスしないので、教室でオフラインでも普段どおり起動できる。
  */
+export interface ArduinoCliInstallerOptions {
+  /** arduino-cli 本体のダウンロードに使う fetch。既定は Node.js 組み込みの `fetch`。 */
+  fetch?: FetchLike;
+}
+
+export interface EnsureReadyOptions {
+  /**
+   * arduino-cli に使わせるプロキシ(例: `http://proxy.example.ac.jp:8080`)。
+   * arduino-cli は OS のプロキシ設定を見ないため、プロキシ必須のネットワークでは
+   * これを渡さないとボード情報やライブラリのダウンロードが一切できない。
+   */
+  proxyUrl?: string | null;
+}
+
+/** 進捗表示を更新する最短間隔。ダウンロードの1チャンクごとにUIへ送ると多すぎるため間引く。 */
+const PROGRESS_THROTTLE_MS = 300;
+
 export class ArduinoCliInstaller {
   constructor(
     private readonly appDataDir: string,
-    private readonly board: InstallerBoardInfo
+    private readonly board: InstallerBoardInfo,
+    private readonly options: ArduinoCliInstallerOptions = {}
   ) {}
 
   get binaryPath(): string {
@@ -209,8 +324,21 @@ export class ArduinoCliInstaller {
 
   private async downloadAndInstallCli(onProgress: ProgressCallback): Promise<void> {
     const asset = getPlatformAsset(this.board.arduinoCliVersion);
-    onProgress({ step: "download-cli", message: "arduino-cli をダウンロード中..." });
-    const buffer = await downloadWithRetry(asset.url);
+    const message = "arduino-cli をダウンロード中...";
+    onProgress({ step: "download-cli", message });
+    let lastReportedAt = 0;
+    const buffer = await downloadFile(asset.url, {
+      fetchImpl: this.options.fetch,
+      onProgress: (receivedBytes, totalBytes) => {
+        const now = Date.now();
+        const finished = totalBytes !== null && receivedBytes >= totalBytes;
+        if (!finished && now - lastReportedAt < PROGRESS_THROTTLE_MS) {
+          return;
+        }
+        lastReportedAt = now;
+        onProgress({ step: "download-cli", message, detail: formatDownloadProgress(receivedBytes, totalBytes) });
+      },
+    });
 
     const tempDir = mkdtempSync(join(tmpdir(), "spresense-blocks-cli-"));
     const archivePath = join(tempDir, asset.archiveFormat === "zip" ? "arduino-cli.zip" : "arduino-cli.tar.gz");
@@ -266,12 +394,17 @@ export class ArduinoCliInstaller {
       if (!needsLibraryInstall(lib, installedNames, pins)) {
         continue;
       }
-      onProgress({ step: "install-library", message: `${lib.name} をインストールしています...` });
+      const message = `${lib.name} をインストールしています...`;
+      onProgress({ step: "install-library", message });
       const events = {
-        onStdout: (chunk: string) =>
-          onProgress({ step: "install-library", message: `${lib.name} をインストールしています...`, detail: chunk }),
-        onStderr: (chunk: string) =>
-          onProgress({ step: "install-library", message: `${lib.name} をインストールしています...`, detail: chunk }),
+        onStdout: (chunk: string) => onProgress({ step: "install-library", message, detail: chunk }),
+        onStderr: (chunk: string) => {
+          // `--git-url` を使うたびに出る「自己責任で」という英語の警告は、コミットを固定したURLしか
+          // 使わないこのアプリでは意味が無く、生徒・先生を不安にさせるだけなので画面には出さない。
+          if (!chunk.includes("--git-url and --zip-path flags allow installing untrusted files")) {
+            onProgress({ step: "install-library", message, detail: chunk });
+          }
+        },
       };
       const isUpdate = installedNames.includes(lib.name);
       try {
@@ -319,8 +452,19 @@ export class ArduinoCliInstaller {
    * 足りなければ用意する。何度呼んでも安全(既に揃っていれば何もしない)。
    * @param libraries センサー拡張ボードなど、特定のブロックパックが必要とする追加ライブラリ。
    */
-  async ensureReady(onProgress: ProgressCallback, libraries: LibraryDependency[] = []): Promise<void> {
+  async ensureReady(
+    onProgress: ProgressCallback,
+    libraries: LibraryDependency[] = [],
+    options: EnsureReadyOptions = {}
+  ): Promise<void> {
     onProgress({ step: "check", message: "セットアップ状況を確認しています..." });
+    if (options.proxyUrl) {
+      onProgress({
+        step: "check",
+        message: "セットアップ状況を確認しています...",
+        detail: `プロキシ ${options.proxyUrl} を使います`,
+      });
+    }
 
     if (!this.isArduinoCliInstalled()) {
       await this.downloadAndInstallCli(onProgress);
@@ -328,7 +472,11 @@ export class ArduinoCliInstaller {
 
     this.ensureConfigFile();
 
-    const client = new ArduinoCliClient(this.binaryPath, this.configFilePath);
+    // 設定ファイル(network.proxy)ではなく環境変数で渡すのは、ノートPCを持ち歩いて
+    // プロキシのある学校と無い自宅を行き来しても、起動のたびに今のネットワークに合わせられるようにするため。
+    const client = new ArduinoCliClient(this.binaryPath, this.configFilePath, {
+      env: options.proxyUrl ? { ARDUINO_NETWORK_PROXY: options.proxyUrl } : undefined,
+    });
     const installedVersion = await client.getInstalledCoreVersion(this.board.coreId);
 
     if (installedVersion !== this.board.coreVersion) {

@@ -1,6 +1,24 @@
-import { ipcMain, type BrowserWindow } from "electron";
-import { ArduinoCliClient, ArduinoCliInstaller, type InstallProgressEvent } from "@spresense-blocks/arduino-cli-bridge";
+import { ipcMain, net, session, type BrowserWindow } from "electron";
+import {
+  ArduinoCliClient,
+  ArduinoCliInstaller,
+  proxyUrlFromPacResult,
+  type InstallProgressEvent,
+} from "@spresense-blocks/arduino-cli-bridge";
 import { board, allBlockPackLibraries } from "@spresense-blocks/board-spresense";
+
+/**
+ * OS(Windowsの「プロキシ設定」や自動構成スクリプト)に設定されたプロキシのうち、
+ * ボード情報の配布元へ接続するときに使われるものを返す。プロキシが無ければ null。
+ */
+async function resolveSystemProxyUrl(): Promise<string | null> {
+  try {
+    return proxyUrlFromPacResult(await session.defaultSession.resolveProxy(board.boardManagerUrl));
+  } catch {
+    // 取得できなくても、プロキシ無しのネットワークなら問題なく動くので続行する
+    return null;
+  }
+}
 
 /**
  * arduino-cli本体のダウンロード〜SPRESENSEコアのインストールまでを、
@@ -14,7 +32,9 @@ export class SetupManager {
   private readyPromise: Promise<void> | null = null;
 
   constructor(appDataDir: string) {
-    this.installer = new ArduinoCliInstaller(appDataDir, board);
+    // Node.js 組み込みの fetch は OS のプロキシ設定を見ないため、プロキシ必須の学校ネットワークでは
+    // arduino-cli 本体のダウンロードが必ず失敗していた。Chromium と同じ通信経路を使う net.fetch を渡す。
+    this.installer = new ArduinoCliInstaller(appDataDir, board, { fetch: (url, init) => net.fetch(url, init) });
   }
 
   /** IPC経由でも main プロセス内(他のIPCハンドラの登録時など)でも使う、実際にビルド/書き込みを行うクライアント。 */
@@ -37,10 +57,12 @@ export class SetupManager {
       return Promise.resolve();
     }
     if (!this.readyPromise) {
-      this.readyPromise = this.installer.ensureReady(onProgress, allBlockPackLibraries).catch((error: unknown) => {
-        this.readyPromise = null;
-        throw error;
-      });
+      this.readyPromise = resolveSystemProxyUrl()
+        .then((proxyUrl) => this.installer.ensureReady(onProgress, allBlockPackLibraries, { proxyUrl }))
+        .catch((error: unknown) => {
+          this.readyPromise = null;
+          throw error;
+        });
     }
     return this.readyPromise;
   }
